@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#05060a">
+<title>核反应堆物理 · 知识网络</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/cytoscape@3.30.2/dist/cytoscape.min.js"></script>
+<style>
+:root{
+  --bg:#080b10;--panel:#101720;--panel-2:#151e29;--line:#263241;--line-soft:#1d2a35;
+  --text:#f2f5f7;--muted:#a8b2bf;--muted-2:#7f8b99;
+  --cyan:#58d5f5;--blue:#6fa8ff;--orange:#ff9b54;--red:#ff6b5f;--amber:#e9bd73;--lime:#9bd8b2;--violet:#b79bff;--magenta:#ff7ac8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:#080b10;color:var(--text);font-size:15px;line-height:1.75;
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.topbar{position:sticky;top:0;z-index:50;height:64px;padding:0 28px;display:flex;align-items:center;gap:14px;
+  background:rgba(8,11,16,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .mark{width:34px;height:34px;border-radius:3px;display:grid;place-items:center;background:var(--cyan);color:#071116;font-weight:800;font-size:15px}
+.brand .tt{font-size:15px;font-weight:700}
+.brand .sub{font-size:12px;color:var(--muted-2)}
+.top-right{margin-left:auto;display:flex;gap:9px}
+.pill{font-size:12px;color:var(--cyan);background:rgba(88,213,245,.07);border:1px solid rgba(88,213,245,.25);border-radius:2px;padding:4px 10px}
+.hero{max-width:1360px;margin:0 auto;padding:42px 30px 22px}
+.eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:ui-monospace,Menlo,monospace;font-size:12px;letter-spacing:.08em;
+  color:var(--cyan);border:1px solid rgba(88,213,245,.28);background:rgba(88,213,245,.06);padding:6px 12px;border-radius:2px;margin-bottom:16px}
+.eyebrow::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px var(--cyan)}
+.hero h1{font-size:clamp(26px,3.4vw,44px);font-weight:800;line-height:1.15;margin-bottom:12px}
+.hero p{max-width:920px;color:var(--muted);font-size:15.5px}
+.hero .stats{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:10px 16px}
+.stat b{font-family:ui-monospace,Menlo,monospace;font-size:17px;color:var(--cyan)}
+.stat span{font-size:12px;color:var(--muted-2);display:block;margin-top:1px}
+.netwrap{max-width:1360px;margin:0 auto;padding:6px 30px 8px;position:relative}
+#cy{width:100%;height:min(66vh,660px);min-height:480px;border:1px solid var(--line);border-radius:4px;background:#080b10}
+.nethint{font-size:12px;color:var(--muted-2);margin-top:8px;display:flex;gap:18px;flex-wrap:wrap}
+.nethint b{color:var(--muted)}
+.legend-dot{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:baseline}
+/* 信息卡 */
+.infocard{position:absolute;right:44px;top:96px;width:330px;background:#0d141c;border:1px solid rgba(88,213,245,.35);border-radius:6px;
+  box-shadow:0 30px 90px -30px rgba(0,0,0,.9);padding:18px 20px;display:none;z-index:10}
+.infocard.show{display:block;animation:cardIn .3s ease both}
+@keyframes cardIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.infocard .tag{font-size:11px;font-family:ui-monospace,Menlo,monospace;color:var(--cyan);letter-spacing:.05em}
+.infocard h3{font-size:18px;margin:5px 0 8px}
+.infocard p{font-size:13px;color:var(--muted);line-height:1.7}
+.infocard .goto{display:inline-block;margin-top:13px;font-size:13px;font-weight:700;color:#071116;
+  background:linear-gradient(100deg,#58d5f5,#9bd8b2);border-radius:4px;padding:8px 16px}
+.infocard .close{position:absolute;top:10px;right:12px;color:var(--muted-2);font-size:16px}
+/* 目录 */
+
+/* concept chain strip */
+.concept-chain{border:1px solid var(--line);border-radius:6px;background:#0c1117;padding:16px 20px;margin-top:18px}
+.cc-title{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;font-weight:800;color:var(--lime);letter-spacing:.06em;margin-bottom:12px}
+.cc-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cc-node{display:inline-flex;flex-direction:column;align-items:center;gap:1px;background:rgba(88,213,245,.07);
+  border:1px solid rgba(88,213,245,.4);border-radius:6px;padding:8px 14px;font-size:13.5px;font-weight:700;color:#d9f4fc;transition:.2s}
+.cc-node small{font-family:ui-monospace,Menlo,monospace;font-size:10px;color:var(--muted-2);font-weight:600}
+.cc-node:hover{transform:translateY(-2px);border-color:var(--cyan);box-shadow:0 0 18px -4px rgba(88,213,245,.5)}
+.cc-node.src{background:rgba(155,216,178,.07);border-color:rgba(155,216,178,.45);color:#d9efe0}
+.cc-node.src:hover{border-color:var(--lime);box-shadow:0 0 18px -4px rgba(155,216,178,.5)}
+.cc-arrow{color:var(--muted-2);font-weight:800}
+.cc-note{font-size:11.5px;color:var(--muted-2);margin-left:8px}
+
+.catalog
+.catalog{max-width:1360px;margin:26px auto 0;padding:0 30px 60px}
+.cat-head{font-size:13px;font-weight:800;color:var(--cyan);letter-spacing:.08em;margin:26px 0 14px;font-family:ui-monospace,Menlo,monospace}
+.chap{border:1px solid var(--line);border-radius:6px;background:#0c1117;margin-bottom:26px;overflow:hidden}
+.chap-head{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line-soft);background:#0d141c}
+.chap-head .n{font-family:ui-monospace,Menlo,monospace;font-weight:800;color:#071116;background:var(--amber);border-radius:3px;padding:3px 10px;font-size:13px}
+.chap-head h2{font-size:17px}
+.chap-head .sub{font-size:12px;color:var(--muted-2)}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;padding:18px 20px}
+.kcard{background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.015));border:1px solid var(--line);border-radius:6px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;transition:.25s}
+.kcard:hover{border-color:rgba(88,213,245,.5);transform:translateY(-2px)}
+.kcard .no{font-family:ui-monospace,Menlo,monospace;font-size:12px;font-weight:800;color:var(--cyan)}
+.kcard h3{font-size:16.5px}
+.kcard p{font-size:12.5px;color:var(--muted);line-height:1.65;flex:1}
+.kcard .links{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.kcard .links a{font-size:12.5px;border:1px solid var(--line);border-radius:4px;padding:6px 13px;background:var(--panel);color:var(--muted);transition:.2s}
+.kcard .links a:hover{color:#fff;border-color:#3b5872}
+.kcard .links a.hl{background:linear-gradient(100deg,#58d5f5,#9bd8b2);color:#071116;border-color:transparent;font-weight:700}
+.kcard .dir{font-size:11px;color:var(--muted-2)}
+.res{max-width:1360px;margin:0 auto;padding:0 30px 70px}
+.resbox{border:1px solid var(--line);border-radius:6px;background:#0c1117;padding:18px 22px;font-size:13.5px;color:var(--muted);line-height:2}
+.resbox a{color:var(--cyan);border-bottom:1px dashed rgba(88,213,245,.4)}
+.resbox .src{color:var(--muted-2);font-size:12px}
+.footer{border-top:1px solid var(--line-soft);padding:20px 30px;color:var(--muted-2);font-size:12px;text-align:center}
+@media (max-width:900px){
+  .hero{padding:32px 18px 16px}.netwrap,.catalog,.res{padding-left:14px;padding-right:14px}
+  .infocard{right:20px;left:20px;width:auto;top:auto;bottom:20px}
+  .kgrid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><div class="mark">网</div><div><div class="tt">核反应堆物理 · 知识网络</div><div class="sub">全部课件页面的整合入口 · 点击节点跳转</div></div></div>
+  <div class="top-right"><span class="pill">第 1~2 章 · 8 个交互页面</span></div>
+</header>
+
+<section class="hero">
+  <div class="eyebrow">KNOWLEDGE NETWORK · 第 1~2 章知识地图</div>
+  <h1>一张网络，串起全部知识点</h1>
+  <p>每个节点对应一个完整课件页：讲解页（i3 动态可视化）或实验室（可交互仿真）。图谱主线即学习路径：知识点从左到右依次推进，实验室挂在所属知识点正下方；贯穿 II 章的「核心概念链」单列在图谱下方，点击即可直达对应页面。</p>
+  <div class="stats">
+    <div class="stat"><b>2</b><span>章节</span></div>
+    <div class="stat"><b>7</b><span>知识点逐字稿</span></div>
+    <div class="stat"><b>4</b><span>实验室 / 互动仿真</span></div>
+    <div class="stat"><b>3</b><span>核心概念链</span></div>
+  </div>
+</section>
+
+<div class="netwrap">
+  <div id="cy"></div>
+  <div class="infocard" id="infocard">
+    <button class="close" id="infoClose">✕</button>
+    <div class="tag" id="infoTag"></div>
+    <h3 id="infoTitle"></h3>
+    <p id="infoDesc"></p>
+    <a class="goto" id="infoLink" href="#">进入页面 →</a>
+  </div>
+  <div class="nethint">
+    <span><i class="legend-dot" style="background:#58d5f5"></i><b>知识点讲解页</b>（点击查看并进入）</span>
+    <span><i class="legend-dot" style="background:#b79bff"></i><b>实验室</b>（可交互 / 自动演示）</span>
+    <span><i class="legend-dot" style="background:#e9bd73"></i><b>章节</b></span>
+    <span><i class="legend-dot" style="background:#ff7ac8"></i><b>课程壳</b></span>
+    <span><b>核心概念前置链</b>见图谱下方横条（可点击跳转）</span>
+  </div>
+</div>
+
+
+<div class="catalog" style="padding-top:0">
+  <div class="concept-chain">
+    <div class="cc-title">核心概念链 · 前置关系（点击概念直达讲解页）</div>
+    <div class="cc-row">
+      <a class="cc-node" href="ii1_cross_section.html">截面 σ<small>II.1</small></a><span class="cc-arrow">→</span>
+      <a class="cc-node" href="ii1_cross_section.html">宏观截面 Σ<small>II.1</small></a><span class="cc-arrow">→</span>
+      <a class="cc-node" href="ii2_mean_free_path.html">平均自由程 λ<small>II.2</small></a><span class="cc-arrow">→</span>
+      <a class="cc-node" href="ii4_power_decay_heat.html">反应率 R=Σφ<small>II.4</small></a><span class="cc-arrow">→</span>
+      <a class="cc-node" href="ii4_power_decay_heat.html">功率 MWth/MWe<small>II.4</small></a><span class="cc-arrow">→</span>
+      <a class="cc-node" href="ii4_decay_heat_lab.html">衰变热<small>II.4 Lab</small></a>
+    </div>
+    <div class="cc-row" style="margin-top:9px">
+      <a class="cc-node src" href="ii3_fission.html">裂变 · 200MeV<small>II.3</small></a><span class="cc-arrow">→</span>
+      <a class="cc-node src" href="i1_chain_reaction.html">链式反应 · k<small>I.1</small></a>
+      <span class="cc-note">裂变同时派生「俘获-裂变比 α」与「瞬发/缓发中子」，均在 II.3 讲解页内。</span>
+    </div>
+  </div>
+</div>
+
+<div class="catalog">
+  <div class="cat-head">CHAPTER I · 引言</div>
+  <div class="chap">
+    <div class="chap-head"><span class="n">I</span><h2>引言</h2><span class="sub">3 个知识点 · 形象化展示 + 事实呈现</span></div>
+    <div class="kgrid">
+      <div class="kcard"><span class="no">I.1</span><h3>自持链式裂变反应</h3>
+        <p>多米诺式增殖与「自持」的两个条件（损耗后剩一个有效中子 + 材料足够多）；内嵌 k 滑块链式反应仿真。</p>
+        <div class="dir">制作方向：形象化展示 · 时长 4~5 分钟</div>
+        <div class="links"><a class="hl" href="i1_chain_reaction.html">讲解页</a><a href="index.html">第一章课程壳</a></div></div>
+      <div class="kcard"><span class="no">I.2</span><h3>裂变反应堆及其分类</h3>
+        <p>五大组成；能谱（热堆/快堆）、冷却剂（轻水/重水/气冷/钠冷）、用途（动力/生产/实验）三维度图谱；堆型组合查询器。</p>
+        <div class="dir">制作方向：事实呈现 · 时长 4~5 分钟</div>
+        <div class="links"><a class="hl" href="i2_reactor_types.html">讲解页</a></div></div>
+      <div class="kcard"><span class="no">I.3</span><h3>压水堆核电站工作原理</h3>
+        <p>尺度链、一回路、蒸汽发生器、二回路、能量转化闭环；动态全厂总图 + 自动讲解（录屏）模式。</p>
+        <div class="dir">制作方向：形象化展示 · 时长 4~5 分钟（已完成）</div>
+        <div class="links"><a class="hl" href="pwr_i3.html">讲解页</a><a href="pwr_lab.html">互动实验室</a></div></div>
+    </div>
+  </div>
+
+  <div class="cat-head">CHAPTER II · 反应堆中的核反应</div>
+  <div class="chap">
+    <div class="chap-head"><span class="n">II</span><h2>反应堆中的核反应</h2><span class="sub">4 个知识点 · 截面 → 自由程 → 裂变 → 功率/衰变热</span></div>
+    <div class="kgrid">
+      <div class="kcard"><span class="no">II.1</span><h3>中子核反应截面</h3>
+        <p>三种作用形式与反应类型树；薄靶实验定义 σ；微观/宏观截面；σ(E) 三区探索器。4 个内嵌交互。</p>
+        <div class="dir">制作方向：形象化展示 + 事实呈现 · 5~6 分钟</div>
+        <div class="links"><a class="hl" href="ii1_cross_section.html">讲解页</a></div></div>
+      <div class="kcard"><span class="no">II.2</span><h3>中子平均自由程</h3>
+        <p>p(x)=Σe^(−Σx) 直方图收敛；λ=1/Σ；核燃料/慢化剂/控制棒典型值。</p>
+        <div class="dir">制作方向：形象化 + 事实 · 4~5 分钟 · 含教师脚本</div>
+        <div class="links"><a class="hl" href="ii2_mean_free_path.html">讲解页</a><a href="ii2_mean_free_path_lab.html">自由程实验室</a></div></div>
+      <div class="kcard"><span class="no">II.3</span><h3>核裂变反应</h3>
+        <p>裂变全程动画；易/可裂变核素；俘获-裂变比 α；驼峰曲线抽样；瞬发/缓发中子；200 MeV 能量账本。</p>
+        <div class="dir">制作方向：事实呈现 · 5~6 分钟 · ENDF 真实数据图</div>
+        <div class="links"><a class="hl" href="ii3_fission.html">讲解页</a></div></div>
+      <div class="kcard"><span class="no">II.4</span><h3>反应堆功率与衰变热</h3>
+        <p>R=Σ_f·φ 两种理解；3000 MWth → 1400 MWe；停堆后的剩余功率与衰变热长尾。</p>
+        <div class="dir">制作方向：形象化 + 事实 · 5 分钟 · 含教师脚本</div>
+        <div class="links"><a class="hl" href="ii4_power_decay_heat.html">讲解页</a><a href="ii4_decay_heat_lab.html">衰变热实验室</a></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="res">
+  <div class="resbox">
+    <b style="color:var(--text)">延伸资源（全部页面共用）</b><br>
+    🎬 名师课程视频：哈尔滨工程大学《核反应堆物理》 <a href="https://www.bilibili.com/video/BV1rpKLz5EcH/" target="_blank">bilibili</a> ·
+    西安交通大学 <a href="https://www.bilibili.com/video/BV1wR4y147Pq/" target="_blank">bilibili</a><br>
+    🌐 核数据库与科普：IAEA Nuclear Data Section <a href="https://www-nds.iaea.org/" target="_blank">www-nds.iaea.org</a> ·
+    <a href="https://www.nuclear-power.com/nuclear-power/reactor-physics/" target="_blank">nuclear-power.com / Reactor Physics</a><br>
+    <span class="src">教材：《Applied Reactor Physics》(Hébert)、《Nuclear Reactor Physics》(Stacey)、《核反应堆物理数值计算》等；素材梳理见项目「资料梳理」文件夹。</span>
+  </div>
+</div>
+
+<div class="footer">核反应堆物理 · 知识可见可视资产化 · 知识网络整合页 · 依据「知识点梳理表」与全部逐字稿制作</div>
+
+<script>
+(function(){
+  const KP='#58d5f5', LAB='#b79bff', CH='#e9bd73', CON='#9bd8b2', SHELL='#ff7ac8';
+  const PAGES={
+    i1:{tag:'I.1 · 讲解页',title:'自持链式裂变反应',desc:'链式裂变与「自持」的两个条件；内嵌 k 滑块链式反应仿真。',href:'i1_chain_reaction.html'},
+    i2:{tag:'I.2 · 讲解页',title:'裂变反应堆及其分类',desc:'五大组成与「能谱 × 冷却剂 × 用途」三维分类图谱；堆型组合查询器。',href:'i2_reactor_types.html'},
+    i3:{tag:'I.3 · 讲解页',title:'压水堆核电站工作原理',desc:'动态全厂总图 + 步骤联动 + 自动讲解（录屏）模式。',href:'pwr_i3.html'},
+    i3l:{tag:'I.3 · 实验室',title:'压水堆互动实验室',desc:'棒位/主泵/调门/并网/SCRAM 全套操作，任务闯关 + 自动演示电影。',href:'pwr_lab.html'},
+    ii1:{tag:'II.1 · 讲解页',title:'中子核反应截面',desc:'作用形式、反应类型树、薄靶实验、微观/宏观截面、σ(E) 探索器。',href:'ii1_cross_section.html'},
+    ii2:{tag:'II.2 · 讲解页',title:'中子平均自由程',desc:'p(x)=Σe^(−Σx) 直方图收敛与 λ=1/Σ；三种介质的典型值。',href:'ii2_mean_free_path.html'},
+    ii2l:{tag:'II.2 · 实验室',title:'自由程实验室',desc:'蒙特卡洛抽样：中子真实飞行、实测 λ 收敛到 1/Σ；自动演示电影。',href:'ii2_mean_free_path_lab.html'},
+    ii3:{tag:'II.3 · 讲解页',title:'核裂变反应',desc:'裂变全程动画、俘获-裂变比 α、驼峰曲线抽样、瞬发/缓发中子、能量账本。',href:'ii3_fission.html'},
+    ii4:{tag:'II.4 · 讲解页',title:'反应堆功率与衰变热',desc:'R=Σ_f·φ、3000 MWth→1400 MWe、停堆后的衰变热长尾。',href:'ii4_power_decay_heat.html'},
+    ii4l:{tag:'II.4 · 实验室',title:'衰变热实验室',desc:'教师 decay_heat 脚本网页版：P₀ × 运行时间双滑块，曲线联动堆芯余焰。',href:'ii4_decay_heat_lab.html'},
+    shell:{tag:'课程壳',title:'第一章课程壳',desc:'章节目录 + 知识图谱双导航的章节首页（第一版，可作 I 章入口）。',href:'index.html'},
+  };
+const els=[
+    /* chapters */
+    {data:{id:'ch1',label:'第一章\n引言',kind:'ch'},position:{x:280,y:80}},
+    {data:{id:'ch2',label:'第二章\n反应堆中的核反应',kind:'ch'},position:{x:900,y:80}},
+    {data:{id:'shell',label:'第一章课程壳\n（目录+图谱）',kind:'shell',page:'shell'},position:{x:60,y:80}},
+    /* knowledge points —— 学习路径主线（一条线，不交叉） */
+    {data:{id:'i1',label:'I.1 自持链式裂变反应',kind:'kp'},position:{x:100,y:250}},
+    {data:{id:'i2',label:'I.2 裂变反应堆及其分类',kind:'kp'},position:{x:280,y:250}},
+    {data:{id:'i3',label:'I.3 压水堆工作原理',kind:'kp'},position:{x:460,y:250}},
+    {data:{id:'ii1',label:'II.1 中子核反应截面',kind:'kp'},position:{x:660,y:250}},
+    {data:{id:'ii2',label:'II.2 中子平均自由程',kind:'kp'},position:{x:820,y:250}},
+    {data:{id:'ii3',label:'II.3 核裂变反应',kind:'kp'},position:{x:980,y:250}},
+    {data:{id:'ii4',label:'II.4 功率与衰变热',kind:'kp'},position:{x:1140,y:250}},
+    /* labs —— 挂在所属知识点正下方 */
+    {data:{id:'i3l',label:'压水堆互动实验室',kind:'lab',page:'i3l'},position:{x:460,y:420}},
+    {data:{id:'ii2l',label:'自由程实验室',kind:'lab',page:'ii2l'},position:{x:820,y:420}},
+    {data:{id:'ii4l',label:'衰变热实验室',kind:'lab',page:'ii4l'},position:{x:1140,y:420}},
+  ];
+  const edges=[
+    ['shell','ch1'],
+    ['ch1','i1'],['ch1','i2'],['ch1','i3'],
+    ['ch2','ii1'],['ch2','ii2'],['ch2','ii3'],['ch2','ii4'],
+    ['i1','i2'],['i2','i3'],['i3','ii1'],['ii1','ii2'],['ii2','ii3'],['ii3','ii4'],
+    ['i3','i3l'],['ii2','ii2l'],['ii4','ii4l'],
+  ].map(e=>({data:{source:e[0],target:e[1]}}));
+
+  const cy=cytoscape({
+    container:document.getElementById('cy'),
+    elements:els.concat(edges),
+    style:[
+      {selector:'node',style:{'background-color':'rgba(255,255,255,.2)','label':'data(label)','color':'#c9d4de','font-size':12,'text-wrap':'wrap','text-max-width':130,'text-valign':'center','text-halign':'center','width':12,'height':12,'font-family':'-apple-system,PingFang SC,sans-serif'}},
+      {selector:'node[kind="kp"]',style:{'background-color':KP,'width':22,'height':22,'font-size':13,'color':'#d9f4fc','font-weight':600,'text-valign':'bottom','text-margin-y':9,'text-background-color':'#080b10','text-background-opacity':.92,'text-background-padding':'3px'}},
+      {selector:'node[kind="lab"]',style:{'background-color':LAB,'shape':'round-diamond','width':19,'height':19,'font-size':12,'color':'#e2d7ff','font-weight':600,'text-valign':'bottom','text-margin-y':8,'text-background-color':'#080b10','text-background-opacity':.92,'text-background-padding':'3px'}},
+      {selector:'node[kind="ch"]',style:{'background-color':CH,'width':30,'height':30,'font-size':15,'font-weight':700,'color':'#ffe4b8','text-valign':'bottom','text-margin-y':10,'text-background-color':'#080b10','text-background-opacity':.92,'text-background-padding':'3px'}},
+      {selector:'node[kind="con"]',style:{'background-color':CON,'width':10,'height':10,'color':'#c2e6cd','font-size':11,'text-valign':'bottom','text-margin-y':6,'text-background-color':'#080b10','text-background-opacity':.85,'text-background-padding':'2px'}},
+      {selector:'node[kind="shell"]',style:{'background-color':SHELL,'shape':'round-rectangle','width':26,'height':20,'color':'#ffd9ee','font-size':11.5,'text-valign':'bottom','text-margin-y':7}},
+      {selector:'edge',style:{'width':1.2,'line-color':'rgba(255,255,255,.13)','target-arrow-color':'rgba(255,255,255,.13)','target-arrow-shape':'triangle','curve-style':'straight','arrow-scale':.7}},
+      {selector:'edge[source^="ch"]',style:{'line-color':'rgba(233,189,115,.55)','target-arrow-color':'rgba(233,189,115,.55)','width':1.6}},
+      {selector:'edge[target$="l"]',style:{'line-color':'rgba(183,155,255,.55)','target-arrow-color':'rgba(183,155,255,.55)','width':1.6}},
+      {selector:'edge[source="shell"]',style:{'line-color':'rgba(255,122,200,.6)','target-arrow-color':'rgba(255,122,200,.6)','width':1.6}},
+    ],
+    layout:{name:'preset',fit:true,padding:56,animate:false},
+    wheelSensitivity:.2,
+  });
+  window.__cy=cy;   /* 调试/测试句柄 */
+
+  const card=document.getElementById('infocard');
+  function showInfo(id){
+    const p=PAGES[id];if(!p){card.classList.remove('show');return;}
+    document.getElementById('infoTag').textContent=p.tag;
+    document.getElementById('infoTitle').textContent=p.title;
+    document.getElementById('infoDesc').textContent=p.desc;
+    const a=document.getElementById('infoLink');a.href=p.href;
+    card.classList.add('show');
+  }
+  cy.on('tap','node',function(ev){
+    const d=ev.target.data();
+    if(d.page)showInfo(d.page);
+    else if(PAGES[d.id])showInfo(d.id);
+    else card.classList.remove('show');
+  });
+  cy.on('tap',function(ev){if(ev.target===cy)card.classList.remove('show');});
+  document.getElementById('infoClose').addEventListener('click',()=>card.classList.remove('show'));
+  /* 双击直接打开页面 */
+  let lastTap=0,lastId=null;
+  cy.on('tap','node',function(ev){
+    const now=Date.now();const id=ev.target.id();
+    if(now-lastTap<420&&id===lastId){
+      const key=PAGES[id]?id:PAGES[ev.target.data('page')]?ev.target.data('page'):null;
+      if(key)window.location.href=PAGES[key].href;
+    }
+    lastTap=now;lastId=id;
+  });
+})();
+</script>
+</body>
+</html>

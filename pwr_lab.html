@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0c1116">
+<title>压水堆互动实验室 · 能看能点能玩</title>
+<style>
+:root{
+  --bg:#0c1116; --panel:#141d26; --line:#2a3846; --line-soft:#1d2a35;
+  --text:#f2f6f8; --muted:#aeb9c3; --muted-2:#7e8c99;
+  --cyan:#52d3f2; --blue:#6fa8ff; --steam:#b8eaff; --orange:#ff9b54; --red:#ff6b5f;
+  --amber:#ffc86b; --lime:#8fe3a1; --violet:#b79bff;
+  --radius:14px; --ease:cubic-bezier(.22,.61,.21,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:
+    radial-gradient(1100px 700px at 10% -6%, rgba(82,211,242,.12), transparent 55%),
+    radial-gradient(900px 700px at 100% 10%, rgba(255,155,84,.09), transparent 52%),
+    linear-gradient(180deg,#0c1116,#0a0e13);
+  color:var(--text); font-size:15px; line-height:1.7;
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased; overflow-x:hidden; min-height:100vh;
+}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+/* ===== topbar ===== */
+.topbar{position:sticky;top:0;z-index:60;height:60px;padding:0 20px;display:flex;align-items:center;gap:16px;
+  background:rgba(12,17,22,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:11px;flex:0 0 auto}
+.brand .mark{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-weight:800;color:#071116;font-size:15px;
+  background:linear-gradient(135deg,#52d3f2,#ff9b54)}
+.brand .tt{font-size:14.5px;font-weight:800;line-height:1.2;white-space:nowrap}
+.brand .sub{font-size:11px;color:var(--muted-2);white-space:nowrap}
+.tabs{display:flex;gap:6px;margin-left:6px}
+.tabbtn{border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--muted);border-radius:999px;
+  padding:7px 15px;font-size:12.5px;font-weight:700;transition:.2s var(--ease);white-space:nowrap}
+.tabbtn:hover{color:var(--text);background:rgba(255,255,255,.07)}
+.tabbtn.active{color:#071116;background:linear-gradient(100deg,#52d3f2,#8fe3a1);border-color:transparent;font-weight:800}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:9px}
+.badge-chip{font-size:12px;font-weight:700;border:1px solid rgba(255,200,107,.4);color:var(--amber);
+  background:rgba(255,200,107,.08);border-radius:999px;padding:5px 12px;white-space:nowrap}
+.tbtn{border:1px solid var(--line);background:rgba(255,255,255,.035);color:var(--muted);border-radius:999px;
+  padding:7px 13px;font-size:12.5px;font-weight:600;transition:.2s var(--ease);white-space:nowrap}
+.tbtn:hover{color:var(--text);border-color:#45576a;background:rgba(255,255,255,.07)}
+
+/* ===== layout ===== */
+.layout{max-width:1560px;margin:18px auto 40px;padding:0 22px;display:grid;
+  grid-template-columns:minmax(0,1fr) 350px;gap:20px;align-items:start}
+@media (max-width:1120px){.layout{grid-template-columns:1fr}}
+
+.stage{background:linear-gradient(180deg,#101823,#0d141c);border:1px solid var(--line);border-radius:20px;
+  box-shadow:0 22px 70px -28px rgba(0,0,0,.75);overflow:hidden;min-width:0}
+.stage-head{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
+.st-pill{font-size:12px;font-weight:800;border-radius:999px;padding:4px 12px;letter-spacing:.03em;white-space:nowrap;border:1px solid transparent}
+.st-pill.off{color:var(--muted-2);border-color:var(--line);background:rgba(255,255,255,.03)}
+.st-pill.crit{color:#08131a;background:linear-gradient(100deg,#52d3f2,#8fe3a1)}
+.st-pill.warn{color:#1c1206;background:linear-gradient(100deg,#ffc86b,#ff9b54)}
+.st-pill.bad{color:#fff;background:linear-gradient(100deg,#ff6b5f,#ff7ac8)}
+.beacon{width:11px;height:11px;border-radius:50%;background:#33424f;display:inline-block;transition:.25s}
+.beacon.on{background:var(--red);box-shadow:0 0 12px var(--red);animation:blink .55s infinite}
+@keyframes blink{50%{opacity:.25}}
+.legend{display:flex;align-items:center;gap:13px;font-size:11.5px;color:var(--muted);margin-left:auto;flex-wrap:wrap}
+.lg-line{display:inline-block;width:22px;height:4px;border-radius:99px;vertical-align:middle;margin-right:5px}
+.lg-line.hot{background:linear-gradient(90deg,#ff9b54,#ff6b5f)}
+.lg-line.cool{background:linear-gradient(90deg,#52d3f2,#8fe3a1)}
+.lg-line.feed{background:linear-gradient(90deg,#6fa8ff,#b8eaff)}
+.alarm-bar{min-height:28px;display:flex;gap:8px;align-items:center;padding:4px 16px 8px;flex-wrap:wrap}
+.al-item{font-size:11.5px;font-weight:700;color:var(--red);border:1px solid rgba(255,107,95,.45);
+  background:rgba(255,107,95,.09);border-radius:8px;padding:3px 9px;animation:blink 1s infinite}
+.stage-wrap{position:relative;background:
+  radial-gradient(900px 520px at 46% 40%, rgba(82,211,242,.06), transparent 60%),
+  linear-gradient(rgba(255,255,255,.016) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(255,255,255,.016) 1px,transparent 1px);
+  background-size:auto,48px 48px,48px 48px}
+#plantSvg{display:block;width:100%;height:auto;min-width:880px}
+
+.lbl{fill:#f4f8fb;font-size:17px;font-weight:700;text-anchor:middle;pointer-events:none;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.7));font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+.lbl-sm{fill:#c5d1da;font-size:13px;font-weight:600;text-anchor:middle;pointer-events:none;
+  font-family:ui-monospace,Menlo,monospace;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
+.lbl-dyn{fill:#ffd9a8;font-size:13.5px;font-weight:800;text-anchor:middle;pointer-events:none;
+  font-family:ui-monospace,Menlo,monospace;filter:drop-shadow(0 0 6px rgba(255,180,90,.35))}
+.hit{fill:transparent;cursor:pointer}
+.hit:hover{fill:rgba(82,211,242,.07)}
+.focus-ring{fill:none;stroke:var(--cyan);stroke-width:2.5;stroke-dasharray:8 7;opacity:0;transition:.4s}
+.focus-ring.on{opacity:.95;animation:ringPulse 1.5s ease-in-out infinite}
+@keyframes ringPulse{50%{stroke-opacity:.35}}
+.pipe{fill:none;stroke-width:10;stroke-linecap:round;stroke-linejoin:round}
+.fl{fill:none;stroke:rgba(255,255,255,.6);stroke-width:3;stroke-linecap:round}
+.eq-body{fill:#18222d;stroke:#4c6073;stroke-width:3}
+.sv-puff{animation:puffUp 1.1s ease-in-out infinite alternate}
+@keyframes puffUp{from{transform:translateY(6px)}to{transform:translateY(-12px)}}
+
+.subtitle{display:none;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid var(--line-soft);
+  background:linear-gradient(90deg,rgba(82,211,242,.10),rgba(255,155,84,.05))}
+.subtitle.show{display:flex}
+.sub-text{font-size:14.5px;line-height:1.65;color:#eaf3f8;flex:1;min-width:0}
+.sub-text b{color:var(--cyan)}
+.sub-ctrl{display:flex;gap:6px;flex:0 0 auto}
+.sub-ctrl button{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);
+  background:rgba(255,255,255,.04);font-size:14px;transition:.2s}
+.sub-ctrl button:hover{background:rgba(255,255,255,.1)}
+.demo-progress{height:3px;background:rgba(255,255,255,.07);position:relative}
+.demo-progress i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--cyan),var(--lime));
+  width:0%;transition:width .3s linear}
+
+.logbox{border-top:1px solid var(--line-soft)}
+.logbox summary{cursor:pointer;padding:10px 16px;font-size:12.5px;font-weight:700;color:var(--muted);
+  display:flex;align-items:center;gap:8px;list-style:none;user-select:none}
+.logbox summary::-webkit-details-marker{display:none}
+.logbox summary::after{content:"▸";margin-left:auto;transition:.2s}
+.logbox[open] summary::after{transform:rotate(90deg)}
+#logList{list-style:none;max-height:170px;overflow:auto;padding:0 14px 12px;font-size:12px}
+#logList li{padding:5px 9px;border-left:3px solid var(--line);margin-bottom:5px;border-radius:0 8px 8px 0;
+  background:rgba(255,255,255,.025);color:var(--muted)}
+#logList li .t{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;color:var(--muted-2);margin-right:7px}
+#logList li.good{border-left-color:var(--lime);color:#d5ecd9}
+#logList li.warn{border-left-color:var(--amber);color:#f0e2c2}
+#logList li.alarm{border-left-color:var(--red);color:#f4cfcb;background:rgba(255,107,95,.06)}
+
+.side{display:grid;gap:16px;min-width:0}
+.panel{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
+  border:1px solid var(--line);border-radius:16px;padding:15px 16px}
+.p-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;margin-bottom:10px;letter-spacing:.02em}
+.p-title::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+.m-desc{font-size:13.5px;color:#dbe6ee}
+.m-hint{margin-top:8px;font-size:12px;color:var(--amber);background:rgba(255,200,107,.07);
+  border:1px dashed rgba(255,200,107,.35);border-radius:9px;padding:7px 10px}
+.m-dots{display:flex;gap:6px;margin-top:11px}
+.m-dots i{flex:1;height:6px;border-radius:99px;background:rgba(255,255,255,.09)}
+.m-dots i.done{background:linear-gradient(90deg,#8fe3a1,#52d3f2)}
+.m-dots i.cur{background:linear-gradient(90deg,#ffc86b,#ff9b54);animation:blink 1.2s infinite}
+
+.grp{padding:11px 0;border-top:1px solid var(--line-soft)}
+.grp:first-of-type{border-top:none;padding-top:2px}
+.grp-t{font-size:11px;font-weight:800;letter-spacing:.09em;color:var(--muted-2);margin-bottom:9px}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--muted);
+  border-radius:10px;padding:8px 4px;font-size:12.5px;font-weight:700;transition:.2s}
+.seg button.active{color:#081117;background:linear-gradient(100deg,#52d3f2,#8fe3a1);border-color:transparent}
+.slider-row{display:flex;align-items:center;gap:10px}
+.slider-row output{font-family:ui-monospace,Menlo,monospace;font-size:13px;font-weight:800;color:var(--cyan);
+  min-width:56px;text-align:right}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:26px;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:99px;
+  background:linear-gradient(90deg,rgba(82,211,242,.25),rgba(255,155,84,.4))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;
+  background:#eef7fb;border:3px solid var(--cyan);margin-top:-7px;box-shadow:0 0 12px rgba(82,211,242,.6)}
+input[type=range]:disabled{opacity:.4;cursor:not-allowed}
+.btn{width:100%;border-radius:12px;padding:10px;font-size:13.5px;font-weight:800;border:1px solid var(--line);
+  background:rgba(255,255,255,.05);color:var(--text);transition:.2s;letter-spacing:.02em}
+.btn:hover:not(:disabled){background:rgba(255,255,255,.1);transform:translateY(-1px)}
+.btn:disabled{opacity:.38;cursor:not-allowed}
+.btn.primary{background:linear-gradient(100deg,#52d3f2,#8fe3a1);color:#081117;border-color:transparent}
+.btn.danger{background:linear-gradient(100deg,#ff6b5f,#ff7ac8);color:#fff;border-color:transparent;
+  box-shadow:0 8px 26px -10px rgba(255,107,95,.6)}
+.btn-row{display:flex;gap:8px;margin-top:9px}
+.sync-lamp{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted-2)}
+.sync-lamp i{width:10px;height:10px;border-radius:50%;background:#33424f}
+.sync-lamp.on i{background:var(--lime);box-shadow:0 0 10px var(--lime);animation:blink .8s infinite}
+.sync-lamp.on{color:var(--lime)}
+
+.gauges-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.gauge{background:rgba(255,255,255,.03);border:1px solid var(--line-soft);border-radius:11px;padding:8px 10px}
+.g-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.g-name{font-size:10.5px;color:var(--muted-2);font-weight:700;letter-spacing:.04em}
+.g-val{font-family:ui-monospace,Menlo,monospace;font-size:13.5px;font-weight:800;color:#fff}
+.g-val.ok{color:var(--lime)}.g-val.warn{color:var(--amber)}.g-val.bad{color:var(--red)}
+.g-bar{height:7px;border-radius:99px;background:rgba(255,255,255,.08);position:relative;overflow:hidden}
+.g-fill{position:absolute;left:0;top:0;bottom:0;width:0%;border-radius:99px;transition:width .25s,background .3s}
+
+body.demo .side .panel.controls,body.demo .mission-panel{opacity:.45;pointer-events:none}
+
+.modal{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:24px;
+  background:rgba(5,8,11,.78);backdrop-filter:blur(9px);opacity:0;pointer-events:none;transition:.25s}
+.modal.show{opacity:1;pointer-events:auto}
+.mcard{width:min(720px,94vw);max-height:86vh;overflow:auto;background:#101823;border:1px solid var(--line);
+  border-radius:18px;box-shadow:0 40px 140px -30px #000}
+.mhead{display:flex;align-items:center;gap:10px;padding:15px 19px;border-bottom:1px solid var(--line-soft);
+  position:sticky;top:0;background:#101823;z-index:2}
+.mhead h3{font-size:16px;font-weight:800}
+.mhead .mtag{font-size:10.5px;font-family:ui-monospace,Menlo,monospace;color:var(--cyan);
+  border:1px solid rgba(82,211,242,.3);background:rgba(82,211,242,.07);border-radius:99px;padding:2px 9px}
+.mclose{margin-left:auto;width:32px;height:32px;border-radius:9px;border:1px solid var(--line);
+  color:var(--muted);font-size:17px}
+.mclose:hover{color:#fff;background:rgba(255,255,255,.08)}
+.mbody{padding:18px 20px 22px;font-size:14px;color:#cdd8e1}
+.mbody b{color:#fff}
+.k-steps{counter-reset:s;display:grid;gap:9px;margin-top:10px}
+.k-step{counter-increment:s;display:flex;gap:11px;background:rgba(255,255,255,.03);border:1px solid var(--line-soft);
+  border-radius:11px;padding:10px 13px;font-size:13.5px}
+.k-step::before{content:counter(s);flex:0 0 auto;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
+  font-family:ui-monospace,Menlo,monospace;font-weight:800;font-size:12px;color:#071116;
+  background:linear-gradient(135deg,#52d3f2,#8fe3a1)}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.chipx{font-size:11.5px;border:1px solid var(--line);background:rgba(255,255,255,.03);border-radius:999px;
+  padding:3px 11px;color:var(--muted)}
+.chipx.hot{color:var(--orange);border-color:rgba(255,155,84,.4)}
+.chipx.cy{color:var(--cyan);border-color:rgba(82,211,242,.4)}
+.scale-tabs{display:flex;gap:6px;margin:14px 0 10px;flex-wrap:wrap}
+.scale-tabs button{border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--muted);
+  border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700;transition:.2s}
+.scale-tabs button.active{color:#071116;background:linear-gradient(100deg,#b79bff,#52d3f2);border-color:transparent}
+.scale-view{display:flex;gap:16px;align-items:center;background:#0a1016;border:1px solid var(--line-soft);
+  border-radius:13px;padding:14px;min-height:150px}
+.scale-view svg{flex:0 0 auto}
+.scale-info h4{font-size:15px;margin-bottom:4px}
+.scale-info .sz{font-family:ui-monospace,Menlo,monospace;color:var(--cyan);font-size:12.5px;margin-bottom:7px}
+.scale-info p{font-size:13px;color:var(--muted)}
+.chain{display:flex;align-items:center;gap:4px;margin-top:14px;flex-wrap:wrap}
+.chain-node{flex:1;min-width:92px;text-align:center;background:rgba(255,255,255,.04);border:1px solid var(--line);
+  border-radius:11px;padding:10px 6px;opacity:.42;transition:.5s var(--ease)}
+.chain-node.lit{opacity:1;border-color:rgba(82,211,242,.55);box-shadow:0 0 22px -6px rgba(82,211,242,.5);transform:translateY(-2px)}
+.chain-node .big{font-size:16px;font-weight:850}
+.chain-node .sub{font-size:10.5px;color:var(--muted);margin-top:3px}
+.chain-node:nth-child(1) .big{color:var(--orange)}.chain-node:nth-child(3) .big{color:var(--steam)}
+.chain-node:nth-child(5) .big{color:var(--violet)}.chain-node:nth-child(7) .big{color:var(--lime)}
+.chain-node:nth-child(9) .big{color:var(--cyan)}
+.chain-arrow{color:var(--muted-2);font-weight:800}
+
+.finale{position:absolute;inset:0;z-index:20;display:none;place-items:center;background:rgba(6,10,14,.72);backdrop-filter:blur(4px)}
+.finale.show{display:grid}
+.f-card{width:min(680px,92%);background:#0f1721;border:1px solid rgba(82,211,242,.4);border-radius:20px;
+  padding:26px 30px;text-align:center;box-shadow:0 0 80px -18px rgba(82,211,242,.45)}
+.f-card h2{font-size:24px;margin-bottom:8px;
+  background:linear-gradient(100deg,#52d3f2,#8fe3a1,#ffc86b);-webkit-background-clip:text;background-clip:text;color:transparent}
+.f-card p{color:var(--muted);font-size:14px}
+.f-chain{display:flex;gap:6px;justify-content:center;margin:20px 0 6px;flex-wrap:wrap}
+.f-node{font-size:13px;font-weight:800;border:1px solid var(--line);border-radius:10px;padding:9px 13px;
+  opacity:.3;transition:.5s var(--ease);background:rgba(255,255,255,.04)}
+.f-node.lit{opacity:1;transform:translateY(-3px)}
+.f-node:nth-child(1).lit{color:var(--orange);border-color:var(--orange)}
+.f-node:nth-child(3).lit{color:var(--steam);border-color:var(--steam)}
+.f-node:nth-child(5).lit{color:var(--violet);border-color:var(--violet)}
+.f-node:nth-child(7).lit{color:var(--lime);border-color:var(--lime)}
+.f-node:nth-child(9).lit{color:var(--cyan);border-color:var(--cyan)}
+
+.toasts{position:fixed;top:70px;right:18px;z-index:120;display:grid;gap:9px;max-width:320px}
+.toast{background:#131d28;border:1px solid var(--line);border-left:4px solid var(--cyan);border-radius:11px;
+  padding:10px 14px;font-size:13px;font-weight:600;box-shadow:0 14px 40px -14px #000;animation:tIn .35s var(--ease)}
+.toast.good{border-left-color:var(--lime)} .toast.warn{border-left-color:var(--amber)} .toast.alarm{border-left-color:var(--red)}
+@keyframes tIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+.toast.out{opacity:0;transform:translateX(24px);transition:.4s}
+
+#flash{position:fixed;inset:0;z-index:110;pointer-events:none;background:radial-gradient(circle,transparent 40%,rgba(255,60,40,.5));opacity:0}
+#flash.go{animation:fl .9s ease-out}
+@keyframes fl{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
+
+@media (max-width:760px){
+  .topbar{padding:0 10px;gap:8px;overflow-x:auto}
+  .brand .sub{display:none}.tabs{order:3}
+  .layout{padding:0 10px}
+  #plantSvg{min-width:860px}
+  .stage-wrap{overflow-x:auto}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">堆</div>
+    <div><div class="tt">压水堆互动实验室</div><div class="sub">核反应堆物理 · I.3 工作原理 · 可玩模拟</div></div>
+  </div>
+  <nav class="tabs">
+    <button class="tabbtn active" id="tabTask">🎯 任务闯关</button>
+    <button class="tabbtn" id="tabDemo">🎬 自动演示</button>
+    <button class="tabbtn" id="tabBook">📖 知识图鉴</button>
+  </nav>
+  <div class="top-right">
+    <span class="badge-chip" id="badgeChip">🏅 成就 0/8</span>
+    <button class="tbtn" id="btnHelp">❓ 玩法</button>
+    <button class="tbtn" id="btnReset">↺ 电厂复位</button>
+  </div>
+</header>
+
+<main class="layout">
+  <!-- ================= STAGE ================= -->
+  <section class="stage">
+    <div class="stage-head">
+      <span class="st-pill off" id="stPill">● 冷停堆</span>
+      <span class="beacon" id="beacon"></span>
+      <div class="legend">
+        <span><i class="lg-line hot"></i>一回路高温高压水</span>
+        <span><i class="lg-line cool"></i>二回路蒸汽/凝结水</span>
+        <span><i class="lg-line feed"></i>最终热阱冷却水</span>
+      </div>
+    </div>
+    <div class="alarm-bar" id="alarmBar"></div>
+    <div class="stage-wrap">
+      <svg id="plantSvg" viewBox="0 0 1500 790" role="img" aria-label="压水堆核电站可交互模拟图">
+        <defs>
+          <linearGradient id="hotLegGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff9b54"/><stop offset="1" stop-color="#ff6b5f"/></linearGradient>
+          <linearGradient id="coldLegGrad" x1="1" y1="0" x2="0" y2="0"><stop offset="0" stop-color="#ff9b54"/><stop offset="1" stop-color="#ff6b5f"/></linearGradient>
+          <linearGradient id="steamGrad" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#52d3f2"/><stop offset="1" stop-color="#b8eaff"/></linearGradient>
+          <linearGradient id="feedGrad" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#6fa8ff"/><stop offset="1" stop-color="#52d3f2"/></linearGradient>
+          <linearGradient id="rodGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#93a6b7"/><stop offset=".5" stop-color="#66798a"/><stop offset="1" stop-color="#48596a"/></linearGradient>
+          <radialGradient id="coreGlow"><stop offset="0" stop-color="#ffb46a" stop-opacity=".85"/><stop offset=".55" stop-color="#ff6b5f" stop-opacity=".28"/><stop offset="1" stop-color="#ff6b5f" stop-opacity="0"/></radialGradient>
+          <radialGradient id="cherGlow"><stop offset="0" stop-color="#9fe6ff" stop-opacity=".9"/><stop offset=".6" stop-color="#52c8f2" stop-opacity=".3"/><stop offset="1" stop-color="#52c8f2" stop-opacity="0"/></radialGradient>
+          <filter id="softGlow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <marker id="arrHot" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#ff7a4a"/></marker>
+          <marker id="arrCold" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#55c8ef"/></marker>
+          <clipPath id="rodClip"><rect x="198" y="222" width="204" height="330" rx="26"/></clipPath>
+        </defs>
+
+        <!-- containment -->
+        <rect x="52" y="56" width="1396" height="676" rx="34" fill="rgba(255,255,255,.012)" stroke="#20303d" stroke-width="2"/>
+        <text x="750" y="92" class="lbl-sm" style="fill:#7e8c99">压水堆核电站 · 安全壳内一回路 与 二回路（点击任意设备查看知识卡）</text>
+
+        <!-- river / heat sink -->
+        <g>
+          <rect x="1060" y="752" width="420" height="20" rx="10" fill="rgba(111,168,255,.16)" stroke="rgba(111,168,255,.35)"/>
+          <path id="riverWave" d="M1068 762 H1472" stroke="#6fa8ff" stroke-width="2.5" fill="none" opacity=".8"/>
+          <text x="1148" y="744" class="lbl-sm">江河 / 海水 · 最终热阱</text>
+        </g>
+
+        <!-- city -->
+        <g id="cityGroup">
+          <rect x="1300" y="684" width="26" height="64" rx="3" fill="#1a2530" stroke="#31424f"/>
+          <rect x="1330" y="660" width="30" height="88" rx="3" fill="#1a2530" stroke="#31424f"/>
+          <rect x="1364" y="644" width="34" height="104" rx="3" fill="#1a2530" stroke="#31424f"/>
+          <rect x="1402" y="672" width="28" height="76" rx="3" fill="#1a2530" stroke="#31424f"/>
+          <rect x="1434" y="656" width="32" height="92" rx="3" fill="#1a2530" stroke="#31424f"/>
+          <g id="cityWins"></g>
+          <text x="1385" y="636" class="lbl-sm">城市用电</text>
+          <text x="1385" y="618" class="lbl-dyn" id="lblMW">0 MWe</text>
+        </g>
+
+        <!-- transmission -->
+        <g>
+          <path d="M1362 158 L1398 122 L1446 108" stroke="#3a4c5c" stroke-width="3" fill="none"/>
+          <path d="M1450 108 V300 M1428 150 H1472 M1434 190 H1466 M1440 240 H1460" stroke="#3a4c5c" stroke-width="3" fill="none"/>
+          <path id="wirePath" d="M1362 158 L1398 122 L1448 108 L1450 300 L1448 636" stroke="#ffc86b" stroke-width="2.5" fill="none" opacity=".25"/>
+          <text x="1412" y="96" class="lbl-sm" style="fill:#9fb0bd">输电线 → 并网送电</text>
+        </g>
+
+        <!-- cooling water pipes -->
+        <g fill="none">
+          <path d="M1250 585 V722 Q1250 750 1282 750 H1418" stroke="url(#feedGrad)" stroke-width="7"/>
+          <path d="M1396 750 V660 H1358" stroke="url(#feedGrad)" stroke-width="7"/>
+          <path id="flCout" class="fl" d="M1250 585 V722 Q1250 750 1282 750 H1418" style="stroke:rgba(184,234,255,.5);stroke-width:2.5"/>
+          <path id="flCin" class="fl" d="M1396 750 V660 H1358" style="stroke:rgba(184,234,255,.5);stroke-width:2.5"/>
+        </g>
+
+        <!-- secondary pipes -->
+        <g fill="none">
+          <path d="M840 158 H1088" stroke="url(#steamGrad)" class="pipe"/>
+          <path d="M1170 282 V500" stroke="url(#steamGrad)" stroke-width="9" marker-end="url(#arrCold)"/>
+          <path d="M1230 585 V650 H792 V512" stroke="url(#feedGrad)" stroke-width="9"/>
+          <path id="flSteam" class="fl" d="M840 158 H1088"/>
+          <path id="flExh" class="fl" d="M1170 300 V480"/>
+          <path id="flFeed" class="fl" d="M1230 600 V650 H792 V520" style="stroke:rgba(184,234,255,.45);stroke-width:2.5"/>
+        </g>
+
+        <!-- feedwater chain -->
+        <g>
+          <circle cx="1109" cy="683" r="24" class="eq-body"/>
+          <path d="M1109 668 L1109 698 M1094 683 L1124 683" stroke="#52d3f2" stroke-width="4" stroke-linecap="round"/>
+          <text x="1109" y="727" class="lbl-sm">凝结水泵</text>
+          <rect x="945" y="652" width="82" height="62" rx="12" class="eq-body" style="fill:#1b2835" stroke-width="2.5"/>
+          <path d="M957 666 H1015 M957 683 H1015 M957 700 H1015" stroke="#52d3f2" stroke-width="3" stroke-linecap="round"/>
+          <text x="986" y="734" class="lbl-sm">低压加热器</text>
+          <circle cx="854" cy="688" r="26" class="eq-body"/>
+          <path d="M854 670 L854 706 M840 688 L868 688" stroke="#52d3f2" stroke-width="4" stroke-linecap="round"/>
+          <text x="854" y="738" class="lbl-sm">给水泵</text>
+          <rect x="710" y="652" width="82" height="62" rx="12" class="eq-body" style="fill:#1b2835" stroke-width="2.5"/>
+          <path d="M722 666 H780 M722 683 H780 M722 700 H780" stroke="#ff9b54" stroke-width="3" stroke-linecap="round"/>
+          <text x="751" y="734" class="lbl-sm">高压加热器</text>
+        </g>
+
+        <!-- primary pipes -->
+        <g fill="none">
+          <path d="M410 293 H720 V530 H820" stroke="url(#hotLegGrad)" class="pipe" marker-end="url(#arrHot)"/>
+          <path d="M940 530 V640 H120 V500 H188" stroke="url(#coldLegGrad)" class="pipe" marker-end="url(#arrHot)"/>
+          <path id="flHot" class="fl" d="M410 293 H720 V530 H820"/>
+          <path id="flCold" class="fl" d="M940 530 V640 H120 V500 H188"/>
+        </g>
+
+        <!-- SG -->
+        <g>
+          <path d="M730 180 Q730 145 770 145 L910 145 Q950 145 950 180 L950 535 Q950 570 910 570 L770 570 Q730 570 730 535 Z" class="eq-body" style="fill:#17212b"/>
+          <path d="M770 145 Q840 86 910 145" fill="#1d2936" stroke="#4c6073" stroke-width="3"/>
+          <text x="840" y="170" class="lbl">蒸汽发生器</text>
+          <g fill="none" stroke="#9fb0bd" stroke-width="2.4" stroke-linecap="round">
+            <path d="M804 530 C804 465 830 448 840 448 C850 448 876 465 876 530"/>
+            <path d="M824 530 C824 478 836 470 840 470 C844 470 856 478 856 530"/>
+          </g>
+          <text x="840" y="552" class="lbl-sm">倒U形传热管束</text>
+          <path d="M760 250 H920 M764 232 H916" stroke="#31424f" stroke-width="3"/>
+          <text x="772" y="272" class="lbl-sm" style="text-anchor:start">汽水分离器·干燥器</text>
+          <path d="M756 470 H924" stroke="#3d5163" stroke-width="2.5" stroke-dasharray="7 6"/>
+          <text x="772" y="462" class="lbl-sm" style="text-anchor:start;fill:#7e8c99">二回路水位</text>
+          <rect x="826" y="128" width="28" height="34" rx="8" fill="#263542" stroke="#4c6073" stroke-width="2"/>
+          <text x="978" y="152" class="lbl-dyn" style="text-anchor:end" id="lblPsteam">p = 0.30 MPa</text>
+          <g id="sgBubbles"></g>
+          <g id="svPuffs" opacity="0">
+            <circle class="sv-puff" cx="846" cy="138" r="6" fill="#eaf7ff"/>
+            <circle class="sv-puff" cx="854" cy="128" r="5" fill="#eaf7ff" style="animation-delay:.3s"/>
+            <circle class="sv-puff" cx="861" cy="118" r="4" fill="#eaf7ff" style="animation-delay:.6s"/>
+          </g>
+        </g>
+
+        <!-- RPV -->
+        <g>
+          <path d="M190 250 Q190 214 230 214 L370 214 Q410 214 410 250 L410 520 Q410 556 370 556 L230 556 Q190 556 190 520 Z" class="eq-body"/>
+          <path d="M230 214 Q300 150 370 214" fill="#1b2835" stroke="#4c6073" stroke-width="3"/>
+          <rect x="178" y="470" width="26" height="46" rx="9" fill="#263542" stroke="#4c6073" stroke-width="2"/>
+          <rect x="396" y="270" width="28" height="46" rx="9" fill="#263542" stroke="#4c6073" stroke-width="2"/>
+          <path d="M220 470 V610 H300 V300" fill="none" stroke="rgba(111,168,255,.16)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+          <ellipse cx="300" cy="433" rx="62" ry="122" fill="url(#cherGlow)" id="cherk" opacity="0"/>
+          <rect x="256" y="322" width="88" height="222" rx="12" fill="#101820" stroke="#ff9b54" stroke-width="2.4" filter="url(#softGlow)"/>
+          <rect x="256" y="322" width="88" height="222" rx="12" fill="url(#coreGlow)" id="coreGlowRect" opacity="0"/>
+          <g id="sparkles"></g>
+          <g stroke="#7b8a98" stroke-width="1.6" opacity=".8">
+            <line x1="268" y1="342" x2="268" y2="528"/><line x1="280" y1="342" x2="280" y2="528"/>
+            <line x1="292" y1="342" x2="292" y2="528"/><line x1="304" y1="342" x2="304" y2="528"/>
+            <line x1="316" y1="342" x2="316" y2="528"/><line x1="328" y1="342" x2="328" y2="528"/>
+          </g>
+          <rect x="284" y="164" width="32" height="52" rx="8" fill="#263542" stroke="#4c6073" stroke-width="2.5"/>
+          <rect x="296" y="212" width="8" height="18" fill="#3a4c5c"/>
+          <g clip-path="url(#rodClip)" id="rodsGroup"></g>
+          <line x1="430" y1="240" x2="430" y2="540" stroke="#31424f" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="430" cy="248" r="8" fill="#8fa2b3" stroke="#c9d8e4" stroke-width="2" id="rodKnob"/>
+          <text x="450" y="244" class="lbl-sm" style="text-anchor:start;fill:#7e8c99">棒↑抽出</text>
+          <text x="450" y="546" class="lbl-sm" style="text-anchor:start;fill:#7e8c99">↓插入</text>
+          <text x="300" y="315" class="lbl">堆芯</text>
+          <text x="300" y="585" class="lbl-sm">100~200 个燃料组件</text>
+          <text x="300" y="700" class="lbl">反应堆压力容器</text>
+          <circle cx="360" cy="176" r="7" fill="#33424f" id="beaconRpv"/>
+        </g>
+
+        <!-- primary pump -->
+        <g transform="translate(86 535)">
+          <circle cx="34" cy="34" r="34" class="eq-body"/>
+          <g id="pumpRotor">
+            <circle cx="34" cy="34" r="15" fill="#263542" stroke="#52d3f2" stroke-width="2"/>
+            <path d="M34 19 L34 49 M19 34 L49 34" stroke="#52d3f2" stroke-width="4" stroke-linecap="round"/>
+          </g>
+          <text x="34" y="90" class="lbl">主泵</text>
+        </g>
+
+        <!-- turbine -->
+        <g transform="translate(1088 142)">
+          <path d="M0 42 L38 10 L120 10 L170 50 L170 104 L128 140 L28 140 L0 104 Z" class="eq-body" style="fill:#19242f"/>
+          <g id="turbRotor">
+            <path d="M74 8 L120 8 L172 52 L172 104 L118 142 L74 142 Z" fill="#21303e" stroke="#55c8ef" stroke-width="2"/>
+            <path d="M78 12 L120 12 L166 52 L166 100 L118 136 L78 136 Z" fill="none" stroke="rgba(85,200,239,.2)" stroke-width="2"/>
+          </g>
+          <path d="M100 16 L148 62 M100 134 L148 84" stroke="#55c8ef" stroke-width="2" opacity=".55"/>
+          <text x="86" y="174" class="lbl">汽轮机高压缸</text>
+        </g>
+        <text x="1173" y="304" class="lbl-dyn" id="lblRpm">0 rpm</text>
+
+        <!-- generator -->
+        <g transform="translate(1300 160)">
+          <rect x="0" y="0" width="124" height="118" rx="16" class="eq-body"/>
+          <g id="genRotor">
+            <circle cx="62" cy="59" r="36" fill="none" stroke="#ffc86b" stroke-width="5"/>
+            <path d="M62 23 L62 95 M26 59 L98 59" stroke="#ffc86b" stroke-width="4" stroke-linecap="round"/>
+          </g>
+          <text x="62" y="150" class="lbl">发电机</text>
+          <path d="M32 6 L20 -12 L38 -12 Z" fill="#ffc86b" id="boltIcon" opacity=".1"/>
+        </g>
+        <path d="M1266 204 H1298" stroke="#3a4c5c" stroke-width="5" stroke-linecap="round"/>
+        <g>
+          <rect x="1268" y="188" width="30" height="32" rx="7" fill="#18222d" stroke="#4c6073" stroke-width="2.5"/>
+          <line id="breakerBlade" x1="1275" y1="213" x2="1291" y2="195" stroke="#ff6b5f" stroke-width="4" stroke-linecap="round"/>
+          <text x="1283" y="242" class="lbl-sm" style="fill:#7e8c99">并网开关</text>
+        </g>
+
+        <!-- condenser -->
+        <g transform="translate(1115 520)">
+          <rect x="0" y="0" width="240" height="128" rx="22" class="eq-body" style="fill:#17212b"/>
+          <g fill="none" stroke="#6fa8ff" stroke-width="2"><path d="M14 36 H226"/><path d="M14 60 H226"/><path d="M14 84 H226"/></g>
+          <text x="120" y="118" class="lbl" style="font-size:15px">冷凝器</text>
+          <text x="228" y="22" class="lbl-sm" style="text-anchor:end;fill:#7e8c99" id="lblVac">真空 5 kPa</text>
+        </g>
+
+        <!-- particle fx layer -->
+        <g id="fxLayer"></g>
+
+        <!-- focus rings -->
+        <rect id="ring-core" class="focus-ring" x="176" y="150" width="290" height="420" rx="20"/>
+        <rect id="ring-pump" class="focus-ring" x="76" y="524" width="90" height="90" rx="18"/>
+        <rect id="ring-sg" class="focus-ring" x="722" y="132" width="236" height="446" rx="20"/>
+        <rect id="ring-turb" class="focus-ring" x="1080" y="146" width="186" height="146" rx="16"/>
+        <rect id="ring-gen" class="focus-ring" x="1292" y="152" width="140" height="134" rx="16"/>
+
+        <!-- hotspots -->
+        <rect class="hit" data-kb="core" x="176" y="150" width="290" height="560" rx="20"/>
+        <rect class="hit" data-kb="pump" x="76" y="524" width="96" height="96" rx="20"/>
+        <rect class="hit" data-kb="sg" x="722" y="90" width="236" height="488" rx="20"/>
+        <rect class="hit" data-kb="turb" x="1080" y="100" width="186" height="160" rx="16"/>
+        <rect class="hit" data-kb="turb" x="700" y="646" width="420" height="96" rx="14"/>
+        <rect class="hit" data-kb="gen" x="1256" y="150" width="180" height="140" rx="16"/>
+        <rect class="hit" data-kb="cond" x="1105" y="512" width="260" height="146" rx="18"/>
+        <rect class="hit" data-kb="cond" x="1050" y="700" width="440" height="84" rx="14"/>
+      </svg>
+      <div class="demo-progress"><i id="demoBar"></i></div>
+      <div class="subtitle" id="subTitle">
+        <div class="sub-text" id="subText"></div>
+        <div class="sub-ctrl">
+          <button id="subPrev" title="上一幕">⏮</button>
+          <button id="subPlay" title="播放/暂停">⏸</button>
+          <button id="subNext" title="下一幕">⏭</button>
+          <button id="subExit" title="退出演示">✕</button>
+        </div>
+      </div>
+      <div class="finale" id="finale">
+        <div class="f-card">
+          <h2>⚡ 满负荷并网发电成功！</h2>
+          <p>你已完整复现压水堆的能量转化闭环：</p>
+          <div class="f-chain" id="fChain">
+            <span class="f-node">核能<br><small style="font-weight:400;color:#8fa0ad">裂变</small></span><span class="chain-arrow">→</span>
+            <span class="f-node">热能<br><small style="font-weight:400;color:#8fa0ad">一回路</small></span><span class="chain-arrow">→</span>
+            <span class="f-node">蒸汽能<br><small style="font-weight:400;color:#8fa0ad">蒸发器</small></span><span class="chain-arrow">→</span>
+            <span class="f-node">机械能<br><small style="font-weight:400;color:#8fa0ad">汽轮机</small></span><span class="chain-arrow">→</span>
+            <span class="f-node">电能<br><small style="font-weight:400;color:#8fa0ad">发电机</small></span>
+          </div>
+          <p style="margin-top:10px">继续自由操控，或打开知识图鉴复习原理。</p>
+          <div class="btn-row" style="max-width:340px;margin:16px auto 0">
+            <button class="btn primary" id="finaleClose">继 续 玩</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <details class="logbox" open>
+      <summary>📜 运行日志</summary>
+      <ul id="logList"></ul>
+    </details>
+  </section>
+
+  <!-- ================= SIDE ================= -->
+  <aside class="side">
+    <div class="panel mission-panel">
+      <div class="p-title" id="mTitle">当前任务</div>
+      <div class="m-desc" id="mDesc">—</div>
+      <div class="m-hint" id="mHint">💡 —</div>
+      <div class="m-dots" id="mDots"></div>
+    </div>
+
+    <div class="panel controls">
+      <div class="grp">
+        <div class="grp-t">反应堆功率 · 控制棒</div>
+        <div class="slider-row">
+          <input type="range" id="rodSlider" min="0" max="100" step="1" value="12">
+          <output id="rodOut">12%</output>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted-2)">
+          <span>← 插入（降功率）</span><span>抽出（升功率）→</span>
+        </div>
+      </div>
+      <div class="grp">
+        <div class="grp-t">一回路主泵</div>
+        <div class="seg" id="pumpSeg">
+          <button data-v="0" class="active">停止</button>
+          <button data-v="0.6">低速</button>
+          <button data-v="1">额定</button>
+        </div>
+      </div>
+      <div class="grp">
+        <div class="grp-t">二回路</div>
+        <div class="slider-row" style="margin-bottom:8px">
+          <input type="range" id="valveSlider" min="0" max="100" step="1" value="0">
+          <output id="valveOut">0%</output>
+        </div>
+        <div style="font-size:10.5px;color:var(--muted-2);margin:-3px 0 9px">汽机调节阀开度 ↑ 开大进气</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
+          <span class="sync-lamp" id="syncLamp"><i></i> 同步窗口</span>
+          <span style="font-size:11px;color:var(--muted-2)">绿灯亮时按下并网</span>
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" id="btnBreaker" disabled>⚡ 并网合闸</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="btnTurbReset" disabled>🔧 汽机复位</button>
+        </div>
+      </div>
+      <div class="grp">
+        <div class="grp-t">最终热阱 · 循环水泵</div>
+        <div class="seg" id="circSeg">
+          <button data-v="0">停止</button>
+          <button data-v="1" class="active">运行</button>
+        </div>
+      </div>
+      <div class="grp">
+        <div class="grp-t">安全</div>
+        <button class="btn danger" id="btnScram">☢ 紧急停堆 SCRAM</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="p-title">仪表监视</div>
+      <div class="gauges-grid" id="gaugesGrid"></div>
+    </div>
+  </aside>
+</main>
+
+<div class="modal" id="modal">
+  <div class="mcard">
+    <div class="mhead"><h3 id="mTitleH">标题</h3><span class="mtag" id="mTagH">知识卡</span><button class="mclose" id="mClose">✕</button></div>
+    <div class="mbody" id="mBody"></div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+<div id="flash"></div>
+
+<script>
+'use strict';
+/* ================================================================
+   压水堆互动实验室 —— 单文件仿真
+   能看：全厂动画随物理状态实时联动
+   能点：设备热点 → 知识卡；任务面板；成就
+   能玩：控制棒/主泵/调门/并网/SCRAM 全套操作 + 自动演示电影
+================================================================ */
+const $=id=>document.getElementById(id);
+const NS='http://www.w3.org/2000/svg';
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+
+/* ---------------- 日志 / 提示 / 成就 ---------------- */
+function nowStr(){const s=S.time;const m=Math.floor(s/60),ss=Math.floor(s%60);return String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');}
+function log(msg,cls){
+  const ul=$('logList');const li=document.createElement('li');if(cls)li.className=cls;
+  li.innerHTML='<span class="t">'+nowStr()+'</span>'+msg;
+  ul.insertBefore(li,ul.firstChild);
+  while(ul.children.length>60)ul.removeChild(ul.lastChild);
+}
+function toast(msg,cls){
+  const box=$('toasts');const t=document.createElement('div');
+  t.className='toast'+(cls?' '+cls:'');t.textContent=msg;box.appendChild(t);
+  setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),450)},3400);
+  while(box.children.length>4)box.firstChild.remove();
+}
+let badges=new Set();try{badges=new Set(JSON.parse(localStorage.getItem('pwr_lab_badges')||'[]'))}catch(e){}
+function saveBadges(){try{localStorage.setItem('pwr_lab_badges',JSON.stringify([...badges]))}catch(e){}}
+const BADGE_NAMES={crit:'首次临界',m1:'循环建立',m2:'链式反应',m3:'蒸汽就绪',m4:'并网发电',m5:'电网之光',scram:'安全第一',demo:'观影完成'};
+function renderBadges(){$('badgeChip').textContent='🏅 成就 '+badges.size+'/'+Object.keys(BADGE_NAMES).length;}
+function award(id){
+  if(badges.has(id))return;badges.add(id);saveBadges();renderBadges();
+  toast('🏅 成就解锁：'+(BADGE_NAMES[id]||id),'good');log('获得成就 «'+(BADGE_NAMES[id]||id)+'»','good');
+}
+renderBadges();
+
+/* ---------------- 仿真状态 ---------------- */
+const S={
+  time:0,
+  rodsT:12,rods:12,
+  pumpT:0,pump:0,
+  circT:1,circ:1,
+  valveT:0,valve:0,
+  breaker:false,turbTrip:false,
+  P:0,prod:0,
+  Tavg:290,Thot:290,Tcold:290,
+  p:0.3,rpm:0,MWe:0,
+  vac:5,vacT:5,
+  svOpen:false,
+  scram:false,scramAt:-1,
+  crit:false,mwHold:0,
+};
+let everCrit=false;
+
+/* ---------------- 仪表定义 ---------------- */
+const GAUGES=[
+ {id:'P', name:'核功率 %',     min:0,max:115, v:()=>S.P,   d:1, ok:v=>v<=103, warn:v=>v<=109},
+ {id:'Th',name:'热段温度 °C',  min:250,max:380,v:()=>S.Thot,d:0, ok:v=>v<=335, warn:v=>v<=352},
+ {id:'Tc',name:'冷段温度 °C',  min:250,max:330,v:()=>S.Tcold,d:0,ok:v=>v>=280&&v<=305,warn:v=>v>=270&&v<=315},
+ {id:'Ps',name:'蒸汽压力 MPa', min:0,max:8.6, v:()=>S.p,   d:2, ok:v=>v<=7.3, warn:v=>v<=7.9},
+ {id:'N', name:'转速 rpm',     min:0,max:3400, v:()=>S.rpm, d:0, ok:v=>S.breaker||v===0||Math.abs(v-3000)<=80, warn:v=>v<=3290},
+ {id:'MW',name:'电功率 MWe',   min:0,max:1100, v:()=>S.MWe, d:0, ok:()=>true, warn:()=>true},
+];
+function buildGauges(){
+  const g=$('gaugesGrid');
+  GAUGES.forEach(cfg=>{
+    const div=document.createElement('div');div.className='gauge';div.id='g_'+cfg.id;
+    div.innerHTML='<div class="g-top"><span class="g-name">'+cfg.name+'</span><span class="g-val mono">–</span></div>'+
+      '<div class="g-bar"><div class="g-fill"></div></div>';
+    g.appendChild(div);
+  });
+}
+function updateGauges(){
+  GAUGES.forEach(cfg=>{
+    const el=$('g_'+cfg.id);if(!el)return;
+    const v=cfg.v();const fr=clamp((v-cfg.min)/(cfg.max-cfg.min),0,1)*100;
+    let cls='ok';
+    if(!cfg.ok(v))cls=cfg.warn(v)?'warn':'bad';
+    el.querySelector('.g-val').textContent=v.toFixed(cfg.d);
+    el.querySelector('.g-val').className='g-val mono '+cls;
+    const f=el.querySelector('.g-fill');
+    f.style.width=fr+'%';
+    f.style.background=cls==='ok'?'linear-gradient(90deg,#52d3f2,#8fe3a1)':cls==='warn'?'linear-gradient(90deg,#ffc86b,#ff9b54)':'linear-gradient(90deg,#ff9b54,#ff6b5f)';
+  });
+}
+
+/* ---------------- SVG 动效资源 ---------------- */
+const svg=$('plantSvg');
+function mkPath(d){const p=document.createElementNS(NS,'path');p.setAttribute('d',d);p.setAttribute('fill','none');p.setAttribute('stroke','none');svg.appendChild(p);return p;}
+const flowPaths={
+  primary:mkPath('M410 293 H720 V530 H820 C845 530 845 415 875 415 C905 415 905 530 935 530 V640 H120 V500 H190 V470 H218 V610 H298 V300 H410 Z'),
+  steam:mkPath('M840 158 H1088'),
+  exh:mkPath('M1170 282 V500'),
+  feed:mkPath('M1230 585 V650 H760 V512'),
+  cout:mkPath('M1250 585 V722 Q1250 750 1282 750 H1418'),
+  bubble:mkPath('M840 540 C846 470 828 430 838 360 C846 300 850 240 846 170'),
+};
+
+const particles=[];
+const PCFG=[
+ {path:'primary',n:18,r:[3.5,6.5],cols:['#ff9b54','#ff6b5f','#ffc86b'],speed:()=>.02+S.pump*.09*(.35+.65*S.P/100+.2)},
+ {path:'steam',n:8,r:[3,5.5],cols:['#b8eaff','#e4f7ff'],speed:()=>(.005+S.valve*.11)*(S.p>3?1:.25)},
+ {path:'exh',n:5,r:[2.5,4.5],cols:['#b8eaff','#8fd8f2'],speed:()=>S.valve*.1*(S.rpm>100?1:0)},
+ {path:'feed',n:6,r:[2.5,4.5],cols:['#6fa8ff','#52d3f2'],speed:()=>.004+S.valve*.09},
+ {path:'cout',n:5,r:[2.5,4],cols:['#6fa8ff','#b8eaff'],speed:()=>.01+S.circ*.05},
+];
+function initParticles(){
+  const layer=$('fxLayer');
+  PCFG.forEach(cfg=>{
+    const path=flowPaths[cfg.path];const len=path.getTotalLength();
+    for(let i=0;i<cfg.n;i++){
+      const c=document.createElementNS(NS,'circle');
+      const r=cfg.r[0]+Math.random()*(cfg.r[1]-cfg.r[0]);
+      c.setAttribute('r',r.toFixed(1));
+      c.setAttribute('fill',cfg.cols[Math.floor(Math.random()*cfg.cols.length)]);
+      c.style.filter='drop-shadow(0 0 6px rgba(255,255,255,.35))';
+      layer.appendChild(c);
+      particles.push({el:c,path,len,off:Math.random()*len,fac:0.8+Math.random()*0.5,cfg});
+    }
+  });
+}
+const bubbles=[];
+function initBubbles(){
+  const g=$('sgBubbles');const path=flowPaths.bubble;const len=path.getTotalLength();
+  for(let i=0;i<12;i++){
+    const c=document.createElementNS(NS,'circle');
+    c.setAttribute('r',(2+Math.random()*3.5).toFixed(1));
+    c.setAttribute('fill','#cff2ff');c.setAttribute('opacity','0');
+    g.appendChild(c);
+    bubbles.push({el:c,path,len,off:Math.random()*len,v:.6+Math.random()*.8});
+  }
+}
+const sparks=[];
+function initSparks(){
+  const g=$('sparkles');
+  for(let i=0;i<26;i++){
+    const c=document.createElementNS(NS,'circle');
+    c.setAttribute('cx',(262+Math.random()*76).toFixed(0));
+    c.setAttribute('cy',(330+Math.random()*206).toFixed(0));
+    c.setAttribute('r',(1+Math.random()*2).toFixed(1));
+    c.setAttribute('fill','#ffe9b0');c.setAttribute('opacity','0');
+    g.appendChild(c);
+    sparks.push({el:c,ph:Math.random()*6.28,sp:2+Math.random()*4});
+  }
+}
+const ROD_X=[268,283,298,313,328];
+const rodEls=[];
+function initRods(){
+  const g=$('rodsGroup');
+  ROD_X.forEach(x=>{
+    const r=document.createElementNS(NS,'rect');
+    r.setAttribute('x',x-3.5);r.setAttribute('width',7);r.setAttribute('rx',3);
+    r.setAttribute('height',216);r.setAttribute('fill','url(#rodGrad)');
+    r.setAttribute('stroke','#2c3a47');r.setAttribute('stroke-width','1');
+    g.appendChild(r);rodEls.push(r);
+  });
+}
+const wins=[];
+function initCity(){
+  const g=$('cityWins');
+  const bs=[[1300,684,26,64],[1330,660,30,88],[1364,644,34,104],[1402,672,28,76],[1434,656,32,92]];
+  bs.forEach(b=>{
+    for(let wy=b[1]+7;wy<b[1]+b[3]-6;wy+=11){
+      for(let wx=b[0]+4;wx<b[0]+b[2]-5;wx+=8){
+        const r=document.createElementNS(NS,'rect');
+        r.setAttribute('x',wx);r.setAttribute('y',wy);r.setAttribute('width',4.4);r.setAttribute('height',6);
+        r.setAttribute('rx',1);r.setAttribute('fill','#0d141b');
+        g.appendChild(r);wins.push(r);
+      }
+    }
+  });
+}
+
+/* ---------------- 流动虚线（JS 驱动） ---------------- */
+const dashFlows=[];
+function regFlow(id,speedFn){const el=$(id);if(el){el.style.strokeDasharray='10 16';dashFlows.push({el,off:0,speedFn});}}
+regFlow('flHot', ()=>.02+S.pump*.09*(.35+.65*S.P/100+.2));
+regFlow('flCold',()=>.02+S.pump*.09*(.35+.65*S.P/100+.2));
+regFlow('flSteam',()=>(.005+S.valve*.11)*(S.p>3?1:.3));
+regFlow('flExh', ()=>S.valve*.1*(S.rpm>100?1:0));
+regFlow('flFeed',()=>.004+S.valve*.09);
+regFlow('flCout',()=>.01+S.circ*.05);
+regFlow('flCin', ()=>.01+S.circ*.05);
+
+let turbAng=0,genAng=0,pumpAng=0,wireOff=0,riverOff=0;
+
+/* ---------------- 物理更新 ---------------- */
+function rodCurve(r){return clamp((r-14)*1.30,0,112);}
+function tsat(p){return 150+p*20;}
+function decayHeat(ts){return Math.max(.6,6.6*Math.exp(-ts/90)+.8);}
+
+function setBreakerVisual(closed){
+  const bl=$('breakerBlade');
+  if(closed){bl.setAttribute('x1',1274);bl.setAttribute('y1',204);bl.setAttribute('x2',1292);bl.setAttribute('y2',204);bl.setAttribute('stroke','#8fe3a1');}
+  else{bl.setAttribute('x1',1275);bl.setAttribute('y1',213);bl.setAttribute('x2',1291);bl.setAttribute('y2',195);bl.setAttribute('stroke','#ff6b5f');}
+}
+
+function doScram(reason){
+  if(S.scram)return;
+  S.scram=true;S.scramAt=S.time;S.rodsT=0;syncRodUI();
+  const f=$('flash');f.classList.remove('go');void f.offsetWidth;f.classList.add('go');
+  log('<b style="color:#ff8d84">⚠ SCRAM 紧急停堆！</b>'+reason,'alarm');
+  toast('☢ 紧急停堆：'+reason,'alarm');
+  award('scram');
+}
+function turbTrip(reason){
+  if(S.turbTrip)return;
+  S.turbTrip=true;S.breaker=false;setBreakerVisual(false);
+  log('汽轮机跳闸：'+reason,'alarm');toast('🔧 汽轮机跳闸：'+reason,'warn');
+}
+
+function update(dt){
+  S.time+=dt;
+  /* 执行机构趋近目标 */
+  if(S.scram){S.rods=Math.max(0,S.rods-160*dt);}
+  else S.rods+=clamp(S.rodsT-S.rods,-14*dt,14*dt);
+  S.pump +=clamp(S.pumpT -S.pump ,-0.35*dt,0.35*dt);
+  S.circ +=clamp(S.circT -S.circ ,-0.5*dt,0.5*dt);
+  if(S.turbTrip){S.valveT=0;}
+  S.valve+=clamp(S.valveT-S.valve,-0.9*dt,0.9*dt);
+
+  /* 功率 */
+  let Peq;
+  if(S.scram){Peq=decayHeat(S.time-S.scramAt);}
+  else{
+    Peq=rodCurve(S.rods);
+    if(S.Thot>340)Peq*=Math.max(.2,1-(S.Thot-340)*.03); // 温度负反馈
+  }
+  const tau=S.scram?3.2:5.0;
+  S.P+=(Peq-S.P)*dt/tau;
+  S.P=clamp(S.P+(Math.random()-.5)*S.P*.010,0,115);
+
+  /* 一回路温度 */
+  const mFlow=Math.max(.06,S.pump);
+  const heatMW=S.P*30;
+  const dT=heatMW/(mFlow*75);
+  const Tin=285+S.p*0.9;
+  S.Tavg+=((Tin+dT/2)-S.Tavg)*dt/8;
+  S.Thot=S.Tavg+dT/2;S.Tcold=S.Tavg-dT/2;
+
+  /* 蒸发器与蒸汽压力 */
+  const Ts=tsat(S.p);
+  let prod=0;
+  if(S.Thot>Ts-8){prod=clamp((S.Thot-(Ts-8))/25,0,1.15)*(heatMW/3000)*3.0;}
+  S.prod=prod;
+  const cap=S.valve*1.08*Math.min(1.3,S.p/6.7)*3.45; // 调门通流能力
+  let out=Math.min(prod,cap)+0.02*S.p;               // 汽轮机实际耗汽量 + 系统微漏汽
+  if(!S.svOpen&&S.p>7.7){S.svOpen=true;log('安全阀起跳排汽，压力回落','warn');toast('♨ 蒸汽发生器安全阀起跳','warn');}
+  if(S.svOpen){out+=1.8;if(S.p<6.6){S.svOpen=false;log('安全阀回座','info');}}
+  S.p+=(prod-out)*dt*.55;
+  S.p=clamp(S.p,0.2,8.5);
+
+  /* 汽轮机转速与发电 */
+  const steamFrac=clamp(out/3.45,0,1.15);
+  const vacEff=clamp(1-(S.vac-8)/70,.5,1);
+  const turbPct=steamFrac*98*vacEff;
+  if(S.breaker){
+    S.rpm+=(3000-S.rpm)*dt/1.2;
+    S.MWe+=(turbPct*10.4-S.MWe)*dt/1.6;
+  }else{
+    S.MWe+=(0-S.MWe)*dt/0.8;
+    if(S.turbTrip){S.rpm+=(0-S.rpm)*dt/6;}
+    else{
+      // 调速器：调门≥60% 且压力≥4.5MPa 时自动保持额定转速；否则转速正比于进汽能量
+      const gov=(S.valve>=0.6&&S.p>=4.2&&!S.scram);
+      const tR=gov?3000:turbPct*30.6;
+      S.rpm+=(tR-S.rpm)*dt/1.8;
+      if(S.rpm>3300)turbTrip('超速保护动作 (>3300 rpm)：进汽能量过大而未并网。');
+    }
+  }
+
+  /* 冷凝器真空 */
+  S.vacT=S.circ>.5?5:60;
+  S.vac+=(S.vacT-S.vac)*dt/6;
+
+  /* 保护连锁 */
+  if(!S.scram&&S.Thot>358)doScram('一回路热段温度过高 ('+S.Thot.toFixed(0)+'°C)，冷却不足。');
+  if(!S.scram&&S.p>8.2)doScram('蒸汽压力超限，保护停堆。');
+  if(!S.scram&&S.P>111)doScram('核功率过高 (>111%)，功率保护停堆。');
+
+  /* 临界判定 */
+  if(!S.scram&&!S.crit&&S.rods>=14&&S.P>=2){
+    S.crit=true;
+    if(!everCrit){everCrit=true;award('crit');}
+    log('<b style="color:#8fe3a1">⚡ 反应堆达到临界！</b>链式裂变自持进行','good');toast('⚡ 反应堆临界！','good');
+  }
+  if(S.scram&&S.P<1)S.crit=false;
+
+  /* 满负荷保持计时 */
+  if(S.MWe>=900)S.mwHold+=dt;else S.mwHold=0;
+}
+
+/* ---------------- 报警条 & 状态 ---------------- */
+function updateAlarms(){
+  const al=[];
+  if(S.scram)al.push('反应堆停堆·余热导出');
+  if(S.Thot>345)al.push('一回路高温 '+S.Thot.toFixed(0)+'°C');
+  if(S.p>7.4)al.push('蒸汽压力高');
+  if(S.pumpT===0&&S.P>10&&!S.scram)al.push('主泵停运·冷却不足风险');
+  if(!S.breaker&&S.rpm>3100&&!S.turbTrip)al.push('汽机未并网·转速偏高');
+  if(S.vac>25)al.push('冷凝器真空恶化·检查循环水泵');
+  if(S.P>103)al.push('核功率 >103%');
+  const bar=$('alarmBar');bar.innerHTML='';
+  al.slice(0,4).forEach(t=>{const s=document.createElement('span');s.className='al-item';s.textContent='⚠ '+t;bar.appendChild(s);});
+  const anyAlarm=al.length>0;
+  $('beacon').classList.toggle('on',anyAlarm);
+  $('beaconRpv').setAttribute('fill',anyAlarm?'#ff6b5f':'#33424f');
+  const pill=$('stPill');
+  if(S.scram){pill.className='st-pill bad';pill.textContent='⛔ 停堆 · 余热导出';}
+  else if(S.breaker){pill.className='st-pill crit';pill.textContent='⚡ 并网发电 '+S.MWe.toFixed(0)+' MWe';}
+  else if(S.crit||S.P>=2){pill.className='st-pill warn';pill.textContent='⚛ 反应堆带核 · 功率 '+S.P.toFixed(0)+'%';}
+  else{pill.className='st-pill off';pill.textContent='● 冷停堆';}
+}
+
+/* ---------------- 视觉联动 ---------------- */
+function tempVisual(dt){
+  const pf=clamp(S.P/100,0,1.15);
+  $('coreGlowRect').setAttribute('opacity',(pf*.8).toFixed(2));
+  $('cherk').setAttribute('opacity',(pf*.5*(0.9+0.1*Math.sin(S.time*3))).toFixed(2));
+  sparks.forEach(sp=>{
+    const tw=.5+.5*Math.sin(S.time*sp.sp+sp.ph);
+    sp.el.setAttribute('opacity',(pf*tw*.95).toFixed(2));
+  });
+  const ins=(100-S.rods)/100;
+  const tip=lerp(332,538,ins);
+  rodEls.forEach(r=>r.setAttribute('y',(tip-216).toFixed(1)));
+  $('rodKnob').setAttribute('cy',lerp(248,532,ins).toFixed(1));
+
+  pumpAng=(pumpAng+S.pump*420*dt)%360;
+  $('pumpRotor').setAttribute('transform','rotate('+pumpAng.toFixed(1)+' 34 34)');
+  turbAng=(turbAng+S.rpm*.09*dt)%360;
+  genAng=(genAng+S.rpm*.05*dt)%360;
+  $('turbRotor').setAttribute('transform','rotate('+turbAng.toFixed(1)+' 123 76)');
+  $('genRotor').setAttribute('transform','rotate('+genAng.toFixed(1)+' 62 59)');
+
+  const boltOn=S.MWe>5?(.45+.55*Math.abs(Math.sin(S.time*(2+S.MWe/120)))):(S.rpm>100?.25:.08);
+  $('boltIcon').setAttribute('opacity',boltOn.toFixed(2));
+
+  wireOff-=dt*(.004+S.MWe*.00022);
+  const wp=$('wirePath');
+  wp.style.strokeDasharray='12 14';
+  wp.style.strokeDashoffset=String((wireOff*1000)%26);
+  wp.setAttribute('opacity',(0.15+clamp(S.MWe/900,0,1)*.85).toFixed(2));
+
+  const litN=Math.round(clamp(S.MWe/1000,0,1.1)*wins.length);
+  wins.forEach((w,i)=>{
+    const on=i<litN&&(Math.sin(i*7.3+S.time*(1+i%3))>-0.95)?1:0;
+    w.setAttribute('fill',on?'#ffd98a':'#0d141b');
+  });
+  $('lblMW').textContent=S.MWe.toFixed(0)+' MWe';
+
+  const boil=clamp(S.prod/3.0,0,1.2);
+  bubbles.forEach(b=>{
+    b.off-=dt*46*b.v*(0.15+boil);
+    if(b.off<0)b.off=b.len;
+    const pt=b.path.getPointAtLength(b.len-b.off);
+    b.el.setAttribute('cx',pt.x.toFixed(1));b.el.setAttribute('cy',pt.y.toFixed(1));
+    b.el.setAttribute('opacity',(boil>0.03?(0.25+boil*.6):0).toFixed(2));
+  });
+  $('svPuffs').setAttribute('opacity',S.svOpen?'0.9':'0');
+
+  particles.forEach(p=>{
+    const sp=p.cfg.speed()*p.fac*46;
+    p.off=(p.off+sp*dt)%p.len;
+    const pt=p.path.getPointAtLength(p.off);
+    p.el.setAttribute('cx',pt.x.toFixed(1));p.el.setAttribute('cy',pt.y.toFixed(1));
+  });
+  dashFlows.forEach(f=>{
+    f.off-=f.speedFn()*dt*460;
+    f.el.style.strokeDashoffset=String(f.off);
+  });
+  riverOff+=dt*S.circ*30;
+  const rw=$('riverWave');rw.style.strokeDasharray='16 12';rw.style.strokeDashoffset=String(-riverOff);
+
+  $('lblPsteam').textContent='p = '+S.p.toFixed(2)+' MPa';
+  $('lblRpm').textContent=S.rpm.toFixed(0)+' rpm';
+  $('lblVac').textContent='真空 '+S.vac.toFixed(0)+' kPa';
+  dynTemp.setAttribute('x',565);dynTemp.setAttribute('y',272);
+  dynTemp.textContent='热段 '+S.Thot.toFixed(0)+'°C';
+  dynCold.setAttribute('x',520);dynCold.setAttribute('y',668);
+  dynCold.textContent='冷段 '+S.Tcold.toFixed(0)+'°C';
+}
+const dynTemp=document.createElementNS(NS,'text');dynTemp.setAttribute('class','lbl-dyn');dynTemp.setAttribute('text-anchor','middle');svg.appendChild(dynTemp);
+const dynCold=document.createElementNS(NS,'text');dynCold.setAttribute('class','lbl-dyn');dynCold.setAttribute('text-anchor','middle');svg.appendChild(dynCold);
+
+/* ---------------- 任务系统 ---------------- */
+const MISSIONS=[
+ {id:'m1',title:'第 1 关 · 建立冷却',need:'确认主泵在「额定」档运行，让一回路冷却剂循环起来。',
+  hint:'一回路必须先流动起来，才能把堆芯热量带走。把主泵切到「额定」，看橙色粒子开始流动。',
+  check:()=>S.pump>0.9},
+ {id:'m2',title:'第 2 关 · 达到临界',need:'缓慢向上抽拉控制棒，使核功率升至 ≥ 25%。',
+  hint:'棒位约 15% 以上才会临界；拉太快温度会冲高哦。',
+  check:()=>S.P>=25},
+ {id:'m3',title:'第 3 关 · 产生蒸汽',need:'等待蒸汽压力升到 ≥ 5.5 MPa。',
+  hint:'保持功率 30%~50%，热量经倒 U 形传热管传给二回路水，沸腾产汽、压力爬升。',
+  check:()=>S.p>=5.5},
+ {id:'m4',title:'第 4 关 · 冲转并网',need:'开大汽机调门冲转；转速进入绿色窗口后按「并网合闸」，电功率 ≥ 400 MWe。',
+  hint:'功率提到约 50% 后，调门开到 65%~75%（压力稳定在 4.2MPa 以上），调速器自动稳到 3000rpm，绿灯亮起合闸。',
+  check:()=>S.breaker&&S.MWe>=400},
+ {id:'m5',title:'第 5 关 · 满负荷发电',need:'电功率 ≥ 900 MWe 并保持 6 秒。',
+  hint:'提棒升功率 + 开足调门；盯紧温度 ≤345°C、压力 ≤7.3MPa。',
+  check:()=>S.mwHold>=6},
+];
+let mIdx=0,holdShown=false;
+function renderMission(){
+  if(mode==='demo')return;
+  const box=$('mTitle'),desc=$('mDesc'),hint=$('mHint'),dots=$('mDots');
+  dots.innerHTML='';
+  MISSIONS.forEach((_,i)=>{const d=document.createElement('i');
+    if(i<mIdx)d.className='done';else if(i===mIdx)d.className='cur';dots.appendChild(d);});
+  if(mIdx>=MISSIONS.length){
+    box.textContent='🎉 全部通关';
+    desc.innerHTML='五大关卡全部完成！可以继续自由操控，或打开<b>知识图鉴</b>回顾原理。';
+    hint.textContent='💡 试试：关掉主泵或循环水泵，看报警系统如何保护电厂；再按复位重新挑战。';
+    return;
+  }
+  const m=MISSIONS[mIdx];
+  box.textContent=m.title;
+  desc.innerHTML=m.need+(m.id==='m5'&&S.mwHold>0?'<br><b style="color:#8fe3a1">保持中… '+S.mwHold.toFixed(1)+'s / 6s</b>':'');
+  hint.textContent='💡 '+m.hint;
+}
+function checkMissions(){
+  if(mode==='demo'||mIdx>=MISSIONS.length)return;
+  const m=MISSIONS[mIdx];
+  if(m.check()){
+    award(m.id);
+    toast('✅ '+m.title+' 完成！','good');
+    log('<b style="color:#8fe3a1">'+m.title+' ✔</b>','good');
+    mIdx++;renderMission();
+    if(mIdx===MISSIONS.length)showFinale();
+  }
+}
+function showFinale(){
+  const f=$('finale');f.classList.add('show');
+  const nodes=document.querySelectorAll('#fChain .f-node');
+  nodes.forEach(n=>n.classList.remove('lit'));
+  nodes.forEach((n,i)=>setTimeout(()=>n.classList.add('lit'),400+i*450));
+}
+$('finaleClose').addEventListener('click',()=>$('finale').classList.remove('show'));
+
+/* ---------------- 知识卡 ---------------- */
+const SCALE=[
+ {n:'燃料芯块',sz:'~1 cm',d:'UO₂ 二氧化铀烧结成的陶瓷小圆柱，是裂变热源的最小单元。'},
+ {n:'燃料元件（棒）',sz:'长 ~3.6 m',d:'芯块叠装进锆合金包壳，两端密封，构成燃料棒。包壳是放射性第一道屏障。'},
+ {n:'燃料组件',sz:'截面 ~20 cm',d:'200 多根燃料棒按正方形排列，含控制棒导向管，用定位格架固定。'},
+ {n:'堆芯',sz:'等效直径 ~3 m',d:'100~200 个组件拼装成堆芯，可控链式裂变反应在这里发生。'},
+ {n:'压力容器',sz:'高 ~12 m',d:'钢制密封容器，把堆芯和约 15.5 MPa 的高温高压冷却剂全部封住——第二道屏障。'},
+];
+function scaleSVG(kind){
+  switch(kind){
+   case 0:return '<svg width="86" height="86"><defs><radialGradient id="pg0"><stop offset="0" stop-color="#ffb46a"/><stop offset="1" stop-color="#c2502a"/></radialGradient></defs><circle cx="43" cy="43" r="30" fill="url(#pg0)" stroke="#7a3a1e" stroke-width="3"/></svg>';
+   case 1:return '<svg width="60" height="120"><rect x="20" y="4" width="20" height="112" rx="10" fill="#20303d" stroke="#4c6073" stroke-width="2.5"/>'+[0,1,2,3,4].map(i=>'<circle cx="30" cy="'+(18+i*22)+'" r="7.5" fill="#ffb46a"/>').join('')+'</svg>';
+   case 2:{let cells='';for(let r=0;r<6;r++)for(let c=0;c<6;c++){cells+='<rect x="'+(8+c*15)+'" y="'+(8+r*15)+'" width="11" height="11" rx="2" fill="'+(((r+c)%5===2)?'#52d3f2':'#ffb46a')+'" opacity=".85"/>';}
+     return '<svg width="106" height="106"><rect x="2" y="2" width="102" height="102" rx="8" fill="#16222c" stroke="#4c6073" stroke-width="2.5"/>'+cells+'</svg>';}
+   case 3:return '<svg width="110" height="110"><defs><radialGradient id="pg3"><stop offset="0" stop-color="#ffd9a8"/><stop offset="1" stop-color="#ff6b5f"/></radialGradient></defs><circle cx="55" cy="55" r="50" fill="#16222c" stroke="#4c6073" stroke-width="3"/><circle cx="55" cy="55" r="34" fill="none" stroke="#ff9b54" stroke-width="2" opacity=".7"/><circle cx="55" cy="55" r="18" fill="none" stroke="#ff6b5f" stroke-width="2" opacity=".7"/><circle cx="55" cy="55" r="7" fill="url(#pg3)"/></svg>';
+   default:return '<svg width="80" height="120"><path d="M14 34 Q14 12 40 8 Q66 12 66 34 V104 Q66 116 54 116 H26 Q14 116 14 104 Z" fill="#18222d" stroke="#4c6073" stroke-width="3"/><rect x="26" y="44" width="28" height="52" rx="4" fill="#101820" stroke="#ff9b54" stroke-width="2"/></svg>';
+  }
+}
+const KB={
+ core:{tag:'结构层级',title:'从 1 cm 芯块到 12 m 压力容器',
+  html:function(){return '<p>理解压水堆，先建立「逐级组合」的空间尺度感——点下方按钮切换层级（▶ 自动播放）：</p>'+
+   '<div class="scale-tabs" id="scaleTabs">'+SCALE.map(function(s,i){return '<button data-i="'+i+'">'+(i+1)+' · '+s.n+'</button>';}).join('')+
+   '<button id="scalePlay">▶ 自动</button></div>'+
+   '<div class="scale-view"><span id="scalePic"></span><div class="scale-info"><h4 id="scaleName"></h4><div class="sz" id="scaleSz"></div><p id="scaleD"></p></div></div>';}},
+ pump:{tag:'一回路',title:'主泵与冷却剂流程',
+  html:function(){return '<p>冷却剂是<b>含硼酸的轻水</b>，既是冷却剂又是慢化剂。主泵驱动它完成封闭循环：</p>'+
+   '<div class="k-steps">'+
+   '<div class="k-step">主泵把冷却剂从压力容器<b>侧下方压入</b>。</div>'+
+   '<div class="k-step">沿容器壁与堆芯之间的<b>环状通道下行</b>到底部。</div>'+
+   '<div class="k-step">转向上行，<b>穿过燃料棒间隙</b>带走裂变热（入口约 290°C → 出口约 330°C）。</div>'+
+   '<div class="k-step">高温水从上部出口接管流出，经<b>热段管道</b>进入蒸汽发生器。</div></div>'+
+   '<div class="chips"><span class="chipx cy">含硼酸轻水</span><span class="chipx hot">入口 ~290°C</span><span class="chipx hot">出口 ~330°C</span><span class="chipx">环腔下行 · 堆芯上行</span></div>';}},
+ sg:{tag:'蒸汽发生器',title:'一、二回路只换热，不混合',
+  html:function(){return '<p>蒸汽发生器是巨大的立式换热器，内部有<b>成千上万根倒 U 形传热管</b>——它是防止放射性外泄的关键屏障。</p>'+
+   '<div class="k-steps">'+
+   '<div class="k-step"><b>管内（一次侧）</b>：一回路高温高压水流过传热管内部。</div>'+
+   '<div class="k-step"><b>管外（二次侧）</b>：二回路水从管外流过吸热，<b>沸腾产生饱和蒸汽</b>。</div>'+
+   '<div class="k-step">蒸汽上行经过<b>汽水分离器 + 干燥器</b>，除去携带的水滴。</div>'+
+   '<div class="k-step">输出<b>干饱和蒸汽</b>送往汽轮机。</div></div>'+
+   '<div class="chips"><span class="chipx cy">倒 U 形管</span><span class="chipx cy">管内/管外隔离</span><span class="chipx hot">干饱和蒸汽 ~6.7 MPa</span></div>';}},
+ turb:{tag:'二回路',title:'蒸汽做功与给水回热',
+  html:function(){return '<p>干饱和蒸汽沿主蒸汽管道进入<b>汽轮机高压缸</b>推动叶轮旋转，压力温度降低后排入<b>冷凝器</b>凝结成水，再逐级加热送回：</p>'+
+   '<div class="k-steps">'+
+   '<div class="k-step">进汽：干饱和蒸汽冲转汽轮机。</div>'+
+   '<div class="k-step">做功：蒸汽膨胀，热能 → 机械能。</div>'+
+   '<div class="k-step">冷凝：乏汽被循环水冷却为液态水（热量排往最终热阱）。</div>'+
+   '<div class="k-step">回热：凝结水泵 → 低压加热器 → 给水泵 → 高压加热器 → 送回蒸汽发生器。</div></div>';}},
+ gen:{tag:'能量转化',title:'核能 → 电能 的完整链条',
+  html:function(){return '<p>汽轮机带动<b>发电机转子</b>旋转，机械能转化为电能，经输电线送入城市电网。</p>'+
+   '<div class="chain">'+
+   '<div class="chain-node"><div class="big">核能</div><div class="sub">堆芯裂变</div></div><span class="chain-arrow">→</span>'+
+   '<div class="chain-node"><div class="big">热能</div><div class="sub">一回路</div></div><span class="chain-arrow">→</span>'+
+   '<div class="chain-node"><div class="big">蒸汽能</div><div class="sub">蒸发器</div></div><span class="chain-arrow">→</span>'+
+   '<div class="chain-node"><div class="big">机械能</div><div class="sub">汽轮机</div></div><span class="chain-arrow">→</span>'+
+   '<div class="chain-node"><div class="big">电能</div><div class="sub">发电机</div></div></div>'+
+   '<p style="margin-top:12px">一台百万千瓦级机组：核热功率约 <b>3000 MWth</b>，发电约 <b>1000 MWe</b>，效率约 1/3——其余热量由冷凝器排往江海。</p>';}},
+ cond:{tag:'最终热阱',title:'冷凝器与循环水',
+  html:function(){return '<p>做完功的乏汽必须在<b>冷凝器</b>里重新变成水，才能被给水泵打回去——这一步靠<b>循环水泵</b>抽取江河水带走热量。</p>'+
+   '<div class="k-steps">'+
+   '<div class="k-step">循环水侧维持<b>高真空</b>（约 5 kPa），乏汽温差大、凝结快。</div>'+
+   '<div class="k-step">若循环水泵停运，真空恶化，汽轮机出力下降甚至被迫停机。</div>'+
+   '<div class="k-step">这就是电厂必须建在大江大海边的根本原因：<b>最终热阱</b>。</div></div>';}},
+ help:{tag:'玩法说明',title:'三分钟上手「压水堆互动实验室」',
+  html:function(){return '<div class="k-steps">'+
+   '<div class="k-step"><b>看</b>：粒子=水/汽流量，辉光=功率，城市灯光=MWe，全部随物理状态实时联动。</div>'+
+   '<div class="k-step"><b>点</b>：点击图中任意设备弹出知识卡；右侧仪表实时显示 6 项关键参数。</div>'+
+   '<div class="k-step"><b>玩</b>：按左侧 5 个任务闯关——启泵 → 提棒临界 → 产汽 → 并网 → 满负荷。</div>'+
+   '<div class="k-step"><b>演</b>：顶部「自动演示」像看电影一样自动完成全过程，配字幕讲解，可暂停/跳幕。</div>'+
+   '<div class="k-step"><b>作</b>：红色 SCRAM 按钮随时紧急停堆（也会触发成就）。试着停掉主泵或循环水泵，观察报警连锁！</div></div>'+
+   '<p style="margin-top:10px;color:var(--muted)">快捷键：<b>A / D 或 ← →</b> 微调控制棒；<b>空格</b> 暂停/继续演示。</p>';}},
+};
+let scaleIdx=0,scaleTimer=null;
+function bindScaleChain(){
+  const tabs=$('scaleTabs');if(!tabs)return;
+  function setIdx(i){
+    scaleIdx=i;
+    tabs.querySelectorAll('button[data-i]').forEach(function(b){b.classList.toggle('active',+b.dataset.i===i);});
+    $('scalePic').innerHTML=scaleSVG(i);
+    $('scaleName').textContent=SCALE[i].n;
+    $('scaleSz').textContent=SCALE[i].sz;
+    $('scaleD').textContent=SCALE[i].d;
+  }
+  tabs.querySelectorAll('button[data-i]').forEach(function(b){b.addEventListener('click',function(){clearInterval(scaleTimer);setIdx(+b.dataset.i);});});
+  var sp=$('scalePlay');
+  if(sp)sp.addEventListener('click',function(){
+    clearInterval(scaleTimer);setIdx(scaleIdx);
+    scaleTimer=setInterval(function(){setIdx((scaleIdx+1)%SCALE.length);},1600);
+  });
+  setIdx(0);
+}
+function openKB(key){
+  const k=KB[key];if(!k)return;
+  $('mTitleH').textContent=k.title;$('mTagH').textContent=k.tag;
+  $('mBody').innerHTML=k.html();
+  $('modal').classList.add('show');
+  bindScaleChain();
+}
+window.openKB=openKB;
+$('mClose').addEventListener('click',()=>$('modal').classList.remove('show'));
+$('modal').addEventListener('click',e=>{if(e.target===$('modal'))$('modal').classList.remove('show');});
+document.querySelectorAll('.hit').forEach(h=>h.addEventListener('click',()=>openKB(h.dataset.kb)));
+
+/* ---------------- 输入绑定 ---------------- */
+function syncRodUI(){$('rodSlider').value=S.rodsT;$('rodOut').textContent=S.rodsT.toFixed(0)+'%';}
+$('rodSlider').addEventListener('input',e=>{
+  if(S.scram){e.target.value=0;return;}
+  S.rodsT=+e.target.value;$('rodOut').textContent=e.target.value+'%';
+});
+$('valveSlider').addEventListener('input',e=>{S.valveT=+e.target.value/100;$('valveOut').textContent=e.target.value+'%';});
+document.querySelectorAll('#pumpSeg button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#pumpSeg button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');S.pumpT=+b.dataset.v;
+  log('主泵设定：'+(S.pumpT===0?'停止':S.pumpT===1?'额定':'低速'),S.pumpT===0?'warn':'info');
+}));
+document.querySelectorAll('#circSeg button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#circSeg button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');S.circT=+b.dataset.v;
+  log('循环水泵：'+(S.circT===0?'停止':'运行'),S.circT===0?'warn':'info');
+  if(S.circT===0)toast('⚠ 停运循环水泵会导致真空恶化','warn');
+}));
+$('btnScram').addEventListener('click',()=>{
+  if(S.scram){toast('反应堆已在停堆状态','warn');return;}
+  doScram('手动触发（操纵员按钮）。');
+});
+$('btnBreaker').addEventListener('click',()=>{
+  if(S.breaker){
+    S.breaker=false;setBreakerVisual(false);
+    log('发电机解列（甩负荷！）','warn');toast('⚡ 解列甩负荷——注意汽机超速风险！','warn');
+    return;
+  }
+  if(S.turbTrip){toast('汽机已跳闸，请先复位','alarm');return;}
+  if(Math.abs(S.rpm-3000)<=35){
+    S.breaker=true;setBreakerVisual(true);
+    log('<b style="color:#8fe3a1">⚡ 并网成功！发电机接入电网</b>','good');toast('⚡ 并网成功，开始发电！','good');
+  }else{
+    toast('❌ 未捕捉同期：请等「同步窗口」绿灯亮再合闸','alarm');
+    log('并网失败：非同期不允许合闸','alarm');
+  }
+});
+$('btnTurbReset').addEventListener('click',()=>{
+  if(!S.turbTrip)return;
+  S.turbTrip=false;S.valveT=0;$('valveSlider').value=0;$('valveOut').textContent='0%';
+  log('汽轮机复位，调门自动关闭','info');toast('🔧 汽机已复位','good');
+});
+
+document.addEventListener('keydown',e=>{
+  if($('modal').classList.contains('show')){if(e.key==='Escape')$('modal').classList.remove('show');return;}
+  const tag=(document.activeElement&&document.activeElement.tagName)||'';
+  if(tag==='INPUT'||tag==='TEXTAREA')return;
+  if(e.key==='a'||e.key==='A'||e.key==='ArrowLeft'){if(!S.scram){S.rodsT=clamp(S.rodsT-2,0,100);syncRodUI();}}
+  if(e.key==='d'||e.key==='D'||e.key==='ArrowRight'){if(!S.scram){S.rodsT=clamp(S.rodsT+2,0,100);syncRodUI();}}
+  if(e.key===' '){e.preventDefault();if(mode==='demo')toggleDemoPlay();}
+});
+
+/* ---------------- 复位 ---------------- */
+function resetPlant(silent){
+  Object.assign(S,{rodsT:12,rods:12,pumpT:0,pump:0,circT:1,circ:1,valveT:0,valve:0,
+    breaker:false,turbTrip:false,P:0,prod:0,Tavg:290,Thot:290,Tcold:290,p:0.3,rpm:0,MWe:0,vac:5,vacT:5,
+    svOpen:false,scram:false,scramAt:-1,crit:false,mwHold:0});
+  mIdx=0;
+  syncRodUI();$('valveSlider').value=0;$('valveOut').textContent='0%';
+  document.querySelectorAll('#pumpSeg button').forEach(x=>x.classList.toggle('active',x.dataset.v==='0'));
+  document.querySelectorAll('#circSeg button').forEach(x=>x.classList.toggle('active',x.dataset.v==='1'));
+  setBreakerVisual(false);
+  if(!silent){log('电厂复位至冷停堆初始状态','info');toast('↺ 电厂已复位','info');renderMission();}
+}
+$('btnReset').addEventListener('click',()=>{
+  if(demo.on){toast('演示进行中，请先退出演示','warn');return;}
+  resetPlant(false);
+});
+
+/* ---------------- 自动演示（可播放动画电影） ---------------- */
+function focusRing(id,on){
+  document.querySelectorAll('.focus-ring').forEach(r=>r.classList.remove('on'));
+  if(on&&id)$('ring-'+id).classList.add('on');
+}
+function doCloseBreaker(auto){
+  if(S.breaker||S.turbTrip)return;
+  if(Math.abs(S.rpm-3000)<=40){
+    S.breaker=true;setBreakerVisual(true);
+    log((auto?'(演示) ':'')+'并网合闸成功','good');
+  }
+}
+const DEMO=[
+ {cap:'<b>欢迎来到压水堆核电站！</b>眼前是一座百万千瓦级机组：左侧安全壳内是反应堆与一回路，右侧是二回路与发电系统。',
+  dur:7,enter(){resetPlant(true);}},
+ {cap:'先认识尺度链：<b>1cm 燃料芯块 → 燃料棒 → 燃料组件 → 堆芯 → 12m 压力容器</b>，层层组合、层层密封。',
+  dur:9,enter(){openKB('core');},exit(){clearInterval(scaleTimer);$('modal').classList.remove('show');}},
+ {cap:'启动<b>一回路主泵</b>：含硼酸轻水开始循环——注意橙色粒子沿「热段 → 蒸发器 → 冷段」流动。',
+  dur:7,enter(){S.pumpT=1;focusRing('pump',true);},exit(){focusRing(null);}},
+ {cap:'缓慢抽出控制棒……<b>达到临界！</b>链式裂变自持进行，堆芯辉光变亮，冷却剂出口温度升到约 330°C。',
+  dur:11,tick(dt){S.rodsT=Math.min(46,S.rodsT+40*(dt||0.016));syncRodUI();focusRing('core',true);},exit(){focusRing(null);}},
+ {cap:'热量经<b>倒 U 形传热管</b>传给二回路：管外水沸腾产汽，经汽水分离器干燥后，蓝色蒸汽流向汽轮机。',
+  dur:9,enter(){focusRing('sg',true);},exit(){focusRing(null);}},
+ {cap:'开大<b>汽机调门</b>（约 3/4 开度）冲转汽轮机——转子加速到 <b>3000 rpm</b>（50Hz 电网对应转速）。',
+  dur:9,tick(dt){
+    if(S.P<58){S.rodsT=Math.min(62,S.rodsT+30*(dt||0.016));syncRodUI();}
+    S.valveT=Math.min(0.78,S.valveT+(dt||0.016)*0.9);$('valveSlider').value=S.valveT*100;$('valveOut').textContent=(S.valveT*100).toFixed(0)+'%';
+    focusRing('turb',true);
+  },exit(){focusRing(null);}},
+ {cap:'转速进入同步窗口，<b>并网合闸！</b>发电机向电网输出电能，城市的灯亮起来了。',
+  dur:10,tick(dt){
+    focusRing('gen',true);
+    if(!S.breaker&&Math.abs(S.rpm-3000)<=30)doCloseBreaker(true);
+    if(!S.breaker&&!S.turbTrip&&S.rpm<2960){if(S.P<58){S.rodsT=Math.min(64,S.rodsT+30*(dt||0.016));syncRodUI();}S.valveT=Math.min(0.8,S.valveT+(dt||0.016)*0.4);$('valveSlider').value=S.valveT*100;}
+  },exit(){focusRing(null);}},
+ {cap:'<b>能量转化闭环：</b>核能 → 热能 → 蒸汽能 → 机械能 → 电能。看完整个故事了，去「任务闯关」亲手玩一遍吧！',
+  dur:8,enter(){
+    const nodes=document.querySelectorAll('#fChain .f-node');nodes.forEach(n=>n.classList.remove('lit'));
+    nodes.forEach((n,i)=>setTimeout(()=>n.classList.add('lit'),300+i*450));
+  }},
+];
+let demo={on:false,i:-1,t:0,paused:false};
+function startDemo(){
+  demo.on=true;demo.paused=false;demo.i=-1;
+  resetPlant(true);
+  $('subTitle').classList.add('show');
+  nextScene();
+  log('开始自动演示模式','info');
+}
+function stopDemo(){
+  if(!demo.on)return;
+  const cur=(demo.i>=0&&demo.i<DEMO.length)?DEMO[demo.i]:null;
+  if(cur&&cur.exit){try{cur.exit()}catch(e){}}
+  demo.on=false;
+  $('subTitle').classList.remove('show');
+  $('demoBar').style.width='0%';
+  focusRing(null);
+  clearInterval(scaleTimer);
+  $('modal').classList.remove('show');
+}
+function nextScene(){
+  if(demo.i>=0&&DEMO[demo.i].exit)DEMO[demo.i].exit();
+  demo.i++;
+  if(demo.i>=DEMO.length){
+    demo.on=false;demo.i=-1;
+    $('subTitle').classList.remove('show');
+    $('demoBar').style.width='100%';
+    focusRing(null);
+    award('demo');
+    toast('🎬 演示完毕！切回任务模式亲自试一试','good');
+    setMode('task');
+    return;
+  }
+  demo.t=0;
+  const sc=DEMO[demo.i];
+  $('subText').innerHTML='<span style="color:var(--cyan);font-family:ui-monospace,monospace;font-size:11px;margin-right:8px">'+(demo.i+1)+'/'+DEMO.length+'</span>'+sc.cap;
+  if(sc.enter)sc.enter();
+  $('demoBar').style.width=(demo.i/DEMO.length*100)+'%';
+}
+function toggleDemoPlay(){
+  demo.paused=!demo.paused;
+  $('subPlay').textContent=demo.paused?'▶':'⏸';
+}
+$('subPlay').addEventListener('click',toggleDemoPlay);
+$('subNext').addEventListener('click',()=>{if(demo.on)nextScene();});
+$('subPrev').addEventListener('click',()=>{if(demo.on){demo.i=Math.max(-1,demo.i-2);nextScene();}});
+$('subExit').addEventListener('click',()=>setMode('task'));
+function demoUpdate(dt){
+  if(!demo.on||demo.paused)return;
+  demo.t+=dt;
+  const sc=DEMO[demo.i];
+  if(sc&&sc.tick){try{sc.tick(dt)}catch(e){console.warn("scene tick error",e)}}
+  if(sc&&demo.t>sc.dur)nextScene();
+}
+
+/* ---------------- 模式切换 ---------------- */
+let mode='task';
+function setMode(m){
+  mode=m;
+  $('tabTask').classList.toggle('active',m==='task');
+  $('tabDemo').classList.toggle('active',m==='demo');
+  $('tabBook').classList.toggle('active',false);
+  document.body.classList.toggle('demo',m==='demo');
+  if(m==='demo'){startDemo();}
+  else{stopDemo();}
+  renderMission();
+}
+$('tabTask').addEventListener('click',()=>setMode('task'));
+$('tabDemo').addEventListener('click',()=>setMode('demo'));
+$('tabBook').addEventListener('click',()=>{setMode('task');openKBMenu();});
+function openKBMenu(){
+  $('mTitleH').textContent='知识图鉴';$('mTagH').textContent='I.3 工作原理';
+  $('mBody').innerHTML=
+   '<div class="k-steps">'+
+   Object.keys(KB).filter(k=>k!=='help').map(k=>'<div class="k-step"><b class="kb-link" style="cursor:pointer;color:var(--cyan)" data-kblink="'+k+'">'+KB[k].title+'</b>&nbsp;<span style="color:var(--muted-2);font-size:12px">'+KB[k].tag+'</span></div>').join('')+
+   '</div><p style="margin-top:10px;color:var(--muted);font-size:12.5px">也可以随时直接点击厂区图中的任意设备查看对应卡片。</p>';
+  $('modal').classList.add('show');
+  $('mBody').querySelectorAll('[data-kblink]').forEach(el=>el.addEventListener('click',()=>openKB(el.dataset.kblink)));
+}
+$('btnHelp').addEventListener('click',()=>openKB('help'));
+
+/* ---------------- 主循环 ---------------- */
+let last=performance.now(),uiAcc=0;
+function frame(now){
+  const dt=Math.min(.06,(now-last)/1000);last=now;
+  if(mode==='demo')demoUpdate(dt);
+  update(dt);
+  tempVisual(dt);
+  uiAcc+=dt;
+  if(uiAcc>0.12){
+    uiAcc=0;
+    updateGauges();updateAlarms();checkMissions();
+    const canSync=!S.breaker&&!S.turbTrip&&Math.abs(S.rpm-3000)<=35&&S.rpm>100;
+    $('btnBreaker').disabled=!canSync&&!S.breaker;
+    $('btnBreaker').textContent=S.breaker?'🔌 解列（甩负荷）':'⚡ 并网合闸';
+    $('syncLamp').classList.toggle('on',canSync);
+    $('btnTurbReset').disabled=!S.turbTrip;
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---------------- 启动 ---------------- */
+initParticles();initBubbles();initSparks();initRods();initCity();
+buildGauges();renderMission();updateGauges();
+resetPlant(true);
+log('机组冷停堆。任务第 1 关：启动主泵建立一回路循环。也可点「🎬 自动演示」先看完整故事。','info');
+setTimeout(()=>toast('👆 点击图中设备可查看知识卡；推荐先看「🎬 自动演示」','info'),800);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0c1116">
+<title>II.2 自由程实验室 · 蒙特卡洛抽样</title>
+<style>
+:root{
+  --bg:#0c1116; --panel:#141d26; --line:#2a3846; --line-soft:#1d2a35;
+  --text:#f2f6f8; --muted:#aeb9c3; --muted-2:#7e8c99;
+  --cyan:#52d3f2; --blue:#6fa8ff; --orange:#ff9b54; --red:#ff6b5f; --amber:#ffc86b; --lime:#8fe3a1; --violet:#b79bff;
+  --ease:cubic-bezier(.22,.61,.21,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:linear-gradient(180deg,#0c1116,#0a0e13);color:var(--text);font-size:15px;line-height:1.7;
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+a{color:inherit;text-decoration:none}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.topbar{position:sticky;top:0;z-index:60;height:60px;padding:0 20px;display:flex;align-items:center;gap:16px;
+  background:rgba(12,17,22,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:11px;flex:0 0 auto}
+.brand .mark{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-weight:800;color:#071116;font-size:14px;background:linear-gradient(135deg,#52d3f2,#ff9b54)}
+.brand .tt{font-size:14.5px;font-weight:800;line-height:1.2;white-space:nowrap}
+.brand .sub{font-size:11px;color:var(--muted-2);white-space:nowrap}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:9px}
+.tbtn{border:1px solid var(--line);background:rgba(255,255,255,.035);color:var(--muted);border-radius:999px;padding:7px 13px;font-size:12.5px;font-weight:600;transition:.2s;white-space:nowrap}
+.tbtn:hover{color:var(--text);border-color:#45576a;background:rgba(255,255,255,.07)}
+.tbtn.primary{background:linear-gradient(100deg,#52d3f2,#8fe3a1);color:#081117;border-color:transparent;font-weight:800}
+.layout{max-width:1560px;margin:18px auto 44px;padding:0 22px;display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:20px;align-items:start}
+@media (max-width:1120px){.layout{grid-template-columns:1fr}}
+.stage{background:linear-gradient(180deg,#101823,#0d141c);border:1px solid var(--line);border-radius:20px;box-shadow:0 22px 70px -28px rgba(0,0,0,.75);overflow:hidden;min-width:0}
+.stage-head{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
+.st-title{font-size:13px;font-weight:800;display:flex;align-items:center;gap:9px}
+.st-title::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px var(--cyan);animation:blink 2s infinite}
+@keyframes blink{50%{opacity:.4}}
+.legend{margin-left:auto;display:flex;gap:13px;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
+.lg{display:inline-flex;align-items:center;gap:6px}
+.lg i{width:20px;height:4px;border-radius:99px;display:inline-block}
+.stage-wrap{position:relative}
+#labCanvas{display:block;width:100%;height:auto;background:#0a0f14}
+.sub{display:none;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid var(--line-soft);background:linear-gradient(90deg,rgba(82,211,242,.10),rgba(255,155,84,.05))}
+.sub.show{display:flex}
+.sub .txt{font-size:14.5px;line-height:1.65;color:#eaf3f8;flex:1}
+.sub .txt b{color:var(--cyan)}
+.sub .ctrl{display:flex;gap:6px;flex:0 0 auto}
+.sub .ctrl button{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.04);font-size:14px;transition:.2s}
+.sub .ctrl button:hover{background:rgba(255,255,255,.1)}
+.demo-progress{height:3px;background:rgba(255,255,255,.07);position:relative}
+.demo-progress i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--cyan),var(--lime));width:0%;transition:width .3s linear}
+.histbox{border-top:1px solid var(--line-soft);padding:12px 16px 16px}
+.histbox .ht{font-size:12.5px;font-weight:800;color:var(--amber);margin-bottom:8px;display:flex;gap:9px;align-items:center}
+.histbox .ht::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--amber);box-shadow:0 0 9px var(--amber)}
+#histCanvas{display:block;width:100%;height:auto;background:#0a0f14;border-radius:10px}
+.side{display:grid;gap:16px;min-width:0}
+.panel{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));border:1px solid var(--line);border-radius:16px;padding:15px 16px}
+.p-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;margin-bottom:11px}
+.p-title::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+.grp{padding:11px 0;border-top:1px solid var(--line-soft)}
+.grp:first-of-type{border-top:none;padding-top:2px}
+.grp-t{font-size:11px;font-weight:800;letter-spacing:.09em;color:var(--muted-2);margin-bottom:9px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{flex:1;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--muted);border-radius:10px;padding:8px 4px;font-size:12.5px;font-weight:700;transition:.2s;min-width:72px}
+.seg button.active{color:#081117;background:linear-gradient(100deg,#52d3f2,#8fe3a1);border-color:transparent}
+.slider-row{display:flex;align-items:center;gap:10px}
+.slider-row output{font-family:ui-monospace,Menlo,monospace;font-size:13px;font-weight:800;color:var(--cyan);min-width:74px;text-align:right}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:26px;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:99px;background:linear-gradient(90deg,rgba(82,211,242,.25),rgba(255,155,84,.4))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#eef7fb;border:3px solid var(--cyan);margin-top:-7px;box-shadow:0 0 12px rgba(82,211,242,.6)}
+.btn{width:100%;border-radius:12px;padding:10px;font-size:13.5px;font-weight:800;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--text);transition:.2s}
+.btn:hover{background:rgba(255,255,255,.1);transform:translateY(-1px)}
+.btn.primary{background:linear-gradient(100deg,#52d3f2,#8fe3a1);color:#081117;border-color:transparent}
+.btn.danger{background:linear-gradient(100deg,#ff6b5f,#ff7ac8);color:#fff;border-color:transparent}
+.btn-row{display:flex;gap:8px;margin-top:9px}
+.gauges{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.gauge{background:rgba(255,255,255,.03);border:1px solid var(--line-soft);border-radius:11px;padding:8px 10px}
+.gauge.wide{grid-column:1/-1}
+.g-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.g-name{font-size:10.5px;color:var(--muted-2);font-weight:700;letter-spacing:.04em}
+.g-val{font-family:ui-monospace,Menlo,monospace;font-size:14px;font-weight:800;color:#fff}
+.g-val.cy{color:var(--cyan)}.g-val.am{color:var(--amber)}.g-val.lm{color:var(--lime)}
+.g-sub{font-size:10.5px;color:var(--muted-2)}
+.note{font-size:12px;color:var(--muted-2);line-height:1.65;margin-top:8px}
+.footer{max-width:1560px;margin:0 auto;padding:16px 22px 40px;color:var(--muted-2);font-size:12px;border-top:1px solid var(--line-soft)}
+.footer .navlinks{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.footer .navlinks a{font-size:12.5px;border:1px solid var(--line);border-radius:999px;padding:6px 13px;background:#101720;color:#aeb9c3}
+.footer .navlinks a:hover{color:#fff;border-color:#3b5872}
+body.demo .side .panel.controls,body.demo .btn-row{opacity:.45;pointer-events:none}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">II.2</div>
+    <div><div class="tt">自由程实验室 · 蒙特卡洛抽样</div><div class="sub">核反应堆物理 · 教师脚本 free_path_sampling 网页版</div></div>
+  </div>
+  <div class="top-right">
+    <button class="tbtn primary" id="demoBtn">🎬 自动演示（录屏）</button>
+    <a class="tbtn" href="ii2_mean_free_path.html">📖 回到讲解页</a>
+    <a class="tbtn" href="knowledge_net.html">🕸 知识网络</a>
+  </div>
+</header>
+
+<main class="layout">
+  <!-- ================= STAGE ================= -->
+  <section class="stage">
+    <div class="stage-head">
+      <span class="st-title">介质点阵 · 中子从中心随机出射</span>
+      <div class="legend">
+        <span class="lg"><i style="background:#52d3f2"></i>中子轨迹</span>
+        <span class="lg"><i style="background:#ffc86b"></i>碰撞点</span>
+        <span class="lg"><i style="background:#ffc86b;opacity:.6;border-bottom:2px dashed #ffc86b;height:0"></i>实测 λ 圈</span>
+        <span class="lg"><i style="background:#8fe3a1;opacity:.6"></i>理论 1/Σ 圈</span>
+      </div>
+    </div>
+    <div class="stage-wrap"><canvas id="labCanvas" width="940" height="640"></canvas></div>
+    <div class="demo-progress"><i id="demoBar"></i></div>
+    <div class="sub" id="subTitle">
+      <div class="txt" id="subText"></div>
+      <div class="ctrl">
+        <button id="subPrev" title="上一幕">⏮</button><button id="subPlay" title="播放/暂停">⏸</button>
+        <button id="subNext" title="下一幕">⏭</button><button id="subExit" title="退出演示">✕</button>
+      </div>
+    </div>
+    <div class="histbox">
+      <div class="ht">飞行距离频率直方图 vs 理论概率密度 p(x)=Σe^(−Σx)</div>
+      <canvas id="histCanvas" width="940" height="270"></canvas>
+    </div>
+  </section>
+
+  <!-- ================= SIDE ================= -->
+  <aside class="side">
+    <div class="panel controls">
+      <div class="p-title">实验台控制</div>
+      <div class="grp">
+        <div class="grp-t">介质宏观截面 Σ（0.01 ~ 3 cm⁻¹）</div>
+        <div class="slider-row"><input type="range" id="sigSlider" min="0" max="100" step="0.5" value="81.6"><output id="sigOut">0.564</output></div>
+        <div class="seg" style="margin-top:9px">
+          <button data-sig="0.564406" class="active">核燃料 0.564</button>
+          <button data-sig="2.650380">慢化剂 2.650</button>
+          <button data-sig="1.840480">控制棒 1.840</button>
+        </div>
+        <div class="note">教师脚本参考值（七群热中子总截面）。也可拖动滑块输入任意 Σ——对应教师手绘稿的「注输入 范围 0.01~3」。</div>
+      </div>
+      <div class="grp">
+        <div class="grp-t">发射</div>
+        <div class="slider-row"><input type="range" id="rateSlider" min="1" max="60" step="1" value="14"><output id="rateOut">14 /s</output></div>
+        <div class="btn-row">
+          <button class="btn primary" id="btnAuto">▶ 自动发射（开/关）</button>
+          <button class="btn" id="btnClear">🧹 清除轨迹</button>
+        </div>
+        <div class="btn-row"><button class="btn" id="btnBurst100">⚡ 一口气抽 500 颗（只统计）</button></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="p-title">实时统计</div>
+      <div class="gauges">
+        <div class="gauge"><div class="g-top"><span class="g-name">已发射 N</span><span class="g-val" id="gN">0</span></div><div class="g-sub">中子样本数</div></div>
+        <div class="gauge"><div class="g-top"><span class="g-name">样本均值 λ̂</span><span class="g-val cy" id="gMean">—</span></div><div class="g-sub">碰撞距离平均（cm）</div></div>
+        <div class="gauge"><div class="g-top"><span class="g-name">样本标准差 s</span><span class="g-val am" id="gStd">—</span></div><div class="g-sub">理论 s = 1/Σ = λ</div></div>
+        <div class="gauge"><div class="g-top"><span class="g-name">理论 λ = 1/Σ</span><span class="g-val lm" id="gLam">1.77</span></div><div class="g-sub">宏观截面倒数（cm）</div></div>
+        <div class="gauge wide"><div class="g-top"><span class="g-name">收敛读数</span><span class="g-val" id="gConv">—</span></div><div class="g-sub">|λ̂ − 1/Σ| / (1/Σ) · N 越大越接近 0</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="p-title">本页对应的知识</div>
+      <div class="note" style="margin-top:2px">
+        · 抽样公式：<b style="color:var(--cyan)">L = −ln(1−u)/Σ</b>（反变换采样，与教师 Matlab 脚本一致）<br>
+        · 概率密度：<b style="color:var(--cyan)">p(x) = Σ·e^(−Σx)</b><br>
+        · 平均自由程：<b style="color:var(--cyan)">λ = 1/Σ</b>，标准差同为 1/Σ（指数分布）<br>
+        · 虚线圆 = 实测平均距离；绿色圆 = 理论 1/Σ。圆重合的那一刻，就理解了 λ。
+      </div>
+    </div>
+  </aside>
+</main>
+
+<div class="footer">
+  <div class="navlinks">
+    <a href="knowledge_net.html">🕸 知识网络总图</a><a href="ii2_mean_free_path.html">← II.2 讲解页</a>
+    <a href="ii1_cross_section.html">II.1 截面</a><a href="ii3_fission.html">II.3 核裂变 →</a>
+  </div>
+  II.2 自由程实验室 · 依据教师 Matlab 脚本 free_path_sampling 与手绘交互设计稿实现 · 单文件自包含
+</div>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+
+/* ---------------- 状态 ---------------- */
+const S={sigma:0.564406,auto:false,rate:14,acc:0};
+const SCALE=170;                 /* px per cm */
+const cv=$('labCanvas'),ctx=cv.getContext('2d');
+const W=cv.width,H=cv.height,CX=W/2,CY=H/2+6;
+const hcv=$('histCanvas'),hctx=hcv.getContext('2d');
+const HW=hcv.width,HH=hcv.height,HL=54,HT=14,HR=HW-16,HB=HH-38;
+
+let neutrons=[],trails=[],flashes=[],samples=[];
+
+/* ---------------- 抽样 ---------------- */
+function samplePath(){const u=Math.random();return -Math.log(1-u)/S.sigma;}   /* cm */
+function spawn(){
+  const L=samplePath();
+  const a=Math.random()*Math.PI*2;
+  neutrons.push({x:CX,y:CY,a,d:0,L:Math.min(L*SCALE,2400),live:true});
+  samples.push(L);
+  if(samples.length>4000)samples.splice(0,samples.length-4000);
+}
+function burst(n){for(let i=0;i<n;i++)samples.push(samplePath());}
+
+/* ---------------- 画布：点阵 ---------------- */
+const dots=[];
+for(let i=0;i<210;i++){
+  const x=Math.random()*W,y=Math.random()*H;
+  if(Math.hypot(x-CX,y-CY)<70)continue;
+  dots.push({x,y,r:2+Math.random()*2});
+}
+
+/* ---------------- 主循环 ---------------- */
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(.06,(now-last)/1000);last=now;
+  if(S.auto){S.acc+=dt*S.rate;while(S.acc>=1){S.acc-=1;spawn();}}
+  /* 物理 */
+  for(let i=neutrons.length-1;i>=0;i--){const n=neutrons[i];
+    const step=150*dt;
+    n.d+=step;n.x+=Math.cos(n.a)*step;n.y+=Math.sin(n.a)*step;
+    if(n.d>=n.L||n.x<8||n.x>W-8||n.y<8||n.y>H-8){
+      flashes.push({x:clamp(n.x,8,W-8),y:clamp(n.y,8,H-8),t:0});
+      neutrons.splice(i,1);
+    }
+  }
+  flashes.forEach(f=>f.t+=dt);
+  flashes=flashes.filter(f=>f.t<0.9);
+  if(trails.length>140)trails.splice(0,trails.length-140);
+
+  /* 绘制 */
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#0a0f14';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(91,113,134,.5)';
+  dots.forEach(d=>{ctx.beginPath();ctx.arc(d.x,d.y,d.r,0,6.283);ctx.stroke();});
+  trails.forEach(t=>{ctx.globalAlpha=t.a*0.4;ctx.strokeStyle='#52d3f2';ctx.lineWidth=1.4;
+    ctx.beginPath();ctx.moveTo(t.x1,t.y1);ctx.lineTo(t.x2,t.y2);ctx.stroke();});
+  ctx.globalAlpha=1;
+  neutrons.forEach(n=>{ctx.strokeStyle='#8fe3ff';ctx.lineWidth=1.8;
+    ctx.beginPath();ctx.moveTo(n.x-Math.cos(n.a)*9,n.y-Math.sin(n.a)*9);ctx.lineTo(n.x,n.y);ctx.stroke();});
+  flashes.forEach(f=>{const k=f.t/0.9;ctx.globalAlpha=1-k;
+    ctx.strokeStyle='#ffc86b';ctx.lineWidth=2;ctx.beginPath();ctx.arc(f.x,f.y,3+16*k,0,6.283);ctx.stroke();
+    ctx.fillStyle='#ffc86b';ctx.beginPath();ctx.arc(f.x,f.y,2.6,0,6.283);ctx.fill();});
+  ctx.globalAlpha=1;
+  /* 圆圈对比 */
+  if(samples.length>6){
+    let s=0;samples.forEach(v=>s+=v);const mean=s/samples.length;
+    ctx.setLineDash([7,7]);ctx.strokeStyle='rgba(255,200,107,.75)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(CX,CY,mean*SCALE,0,6.283);ctx.stroke();
+  }
+  ctx.setLineDash([4,8]);ctx.strokeStyle='rgba(143,227,161,.7)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(CX,CY,(1/S.sigma)*SCALE,0,6.283);ctx.stroke();ctx.setLineDash([]);
+  /* 中心源 */
+  ctx.fillStyle='#0b0e14';ctx.strokeStyle='#52d3f2';ctx.lineWidth=3;
+  ctx.beginPath();ctx.arc(CX,CY,8,0,6.283);ctx.fill();ctx.stroke();
+
+  /* 统计 */
+  updateStats();
+  if(!demo.paused&&demo.on)demoUpdate(dt);
+  requestAnimationFrame(frame);
+}
+function updateStats(){
+  const lam=1/S.sigma;
+  $('gLam').textContent=lam.toFixed(lam<1?3:2);
+  const n=samples.length;
+  $('gN').textContent=n;
+  if(n>3){
+    let s=0;samples.forEach(v=>s+=v);const m=s/n;
+    let v=0;samples.forEach(x=>v+=(x-m)*(x-m));const sd=Math.sqrt(v/n);
+    $('gMean').textContent=m.toFixed(3);
+    $('gStd').textContent=sd.toFixed(3);
+    $('gConv').textContent=Math.abs(m-lam)/lam<0.001?'✓ 已收敛':'偏差 '+(100*Math.abs(m-lam)/lam).toFixed(1)+' %';
+  }
+  drawHist();
+}
+function drawHist(){
+  const lam=1/S.sigma,XMAX=Math.max(2,5*lam);
+  const bins=40,counts=new Array(bins).fill(0);
+  samples.forEach(v=>{const b=Math.floor(v/XMAX*bins);if(b>=0&&b<bins)counts[b]++;});
+  const mx=Math.max(1,Math.max.apply(null,counts));
+  hctx.clearRect(0,0,HW,HH);hctx.fillStyle='#0a0f14';hctx.fillRect(0,0,HW,HH);
+  const bw=(HR-HL)/bins;
+  hctx.fillStyle='rgba(82,211,242,.55)';
+  counts.forEach((c,i)=>{const h=(HB-HT)*c/mx;hctx.fillRect(HL+i*bw+1,HB-h,bw-2,h);});
+  /* 理论曲线（计数标度） */
+  hctx.strokeStyle='#ff9b54';hctx.lineWidth=2.6;hctx.beginPath();
+  for(let i=0;i<=220;i++){
+    const x=i/220*XMAX;const p=S.sigma*Math.exp(-S.sigma*x);
+    const y=HB-(HB-HT)*(p*(XMAX/bins)*samples.length)/mx;
+    i?hctx.lineTo(HL+(HR-HL)*i/220,y):hctx.moveTo(HL+(HR-HL)*i/220,y);
+  }
+  hctx.stroke();
+  const xl=HL+(HR-HL)*Math.min(1,lam/XMAX);
+  hctx.setLineDash([5,6]);hctx.strokeStyle='#ffc86b';hctx.beginPath();hctx.moveTo(xl,HT);hctx.lineTo(xl,HB);hctx.stroke();hctx.setLineDash([]);
+  hctx.fillStyle='#ffc86b';hctx.font='11.5px sans-serif';hctx.fillText('λ=1/Σ='+(lam<1?lam.toFixed(3):lam.toFixed(2))+' cm',Math.min(HR-110,xl+5),HT+14);
+  hctx.strokeStyle='#273246';hctx.beginPath();hctx.moveTo(HL,HT);hctx.lineTo(HL,HB);hctx.lineTo(HR,HB);hctx.stroke();
+  hctx.fillStyle='#7e8c99';hctx.font='11px sans-serif';hctx.fillText('x/cm →',HR-52,HB+18);
+  hctx.fillText('0',HL-6,HB+16);
+  const tick=lam<1?1:Math.ceil(lam);
+  for(let t=tick;t<XMAX;t+=tick){const x=HL+(HR-HL)*t/XMAX;hctx.fillText(String(t),x-6,HB+16);}
+}
+
+/* ---------------- 输入 ---------------- */
+const sigSlider=$('sigSlider'),sigOut=$('sigOut');
+function setSigma(s){
+  S.sigma=s;
+  sigSlider.value=(Math.log10(s)+2)/3.47*100;   /* 0.01->0, 3->100 */
+  sigOut.textContent=s.toFixed(3);
+  document.querySelectorAll('[data-sig]').forEach(b=>b.classList.toggle('active',Math.abs(parseFloat(b.dataset.sig)-s)<1e-6));
+  samples=[];
+}
+sigSlider.addEventListener('input',()=>{const s=Math.pow(10,-2+sigSlider.value/100*3.47);setSigma(Math.min(3,Math.max(0.01,s)));});
+document.querySelectorAll('[data-sig]').forEach(b=>b.addEventListener('click',()=>setSigma(parseFloat(b.dataset.sig))));
+$('rateSlider').addEventListener('input',()=>{S.rate=+$('rateSlider').value;$('rateOut').textContent=S.rate+' /s';});
+$('btnAuto').addEventListener('click',()=>{S.auto=!S.auto;$('btnAuto').textContent=S.auto?'⏸ 停止发射':'▶ 自动发射（开/关）';});
+$('btnClear').addEventListener('click',()=>{trails=[];flashes=[];neutrons=[];});
+$('btnBurst100').addEventListener('click',()=>burst(500));
+
+/* ---------------- 自动演示 ---------------- */
+function setSigmaRaw(s){S.sigma=s;sigOut.textContent=s.toFixed(3);
+  document.querySelectorAll('[data-sig]').forEach(b=>b.classList.toggle('active',Math.abs(parseFloat(b.dataset.sig)-s)<1e-6));
+  samples=[];}
+function burstAndShow(n){burst(n);}
+const DEMO=[
+ {cap:'欢迎来到<b>自由程实验室</b>！左侧点阵是介质中的原子核，中子从中心随机出射——它能飞多远才撞上第一颗核？',dur:8,enter(){setSigmaRaw(0.564406);}},
+ {cap:'设 <b>Σ = 0.564 cm⁻¹（核燃料）</b>。自动发射中子，黄色虚线圆是实测平均距离，绿色圆是理论 λ = 1/Σ ≈ <b>1.77 cm</b>——两者逐渐重合。',dur:12,
+   enter(){setSigmaRaw(0.564406);burst(400);S.auto=true;}},
+ {cap:'换 <b>Σ = 2.650 cm⁻¹（慢化剂）</b>：核更「稠密阻挡」，λ 掉到 <b>0.38 cm</b>——中子在慢化剂里频繁散射，这正是「慢化」的物理。',dur:11,
+   enter(){setSigmaRaw(2.650380);burst(400);}},
+ {cap:'换 <b>Σ = 1.840 cm⁻¹（控制棒）</b>：吸收强，中子穿行距离小——控制棒「刹车」的秘密就在宏观截面里。',dur:11,
+   enter(){setSigmaRaw(1.840480);burst(400);}},
+ {cap:'直方图随样本数收敛成理论曲线 <b>p(x)=Σe^(−Σx)</b>；均值收敛到 <b>λ = 1/Σ</b>。现在切到手动模式，自己试一试！',dur:10,
+   enter(){setSigmaRaw(0.564406);burst(4000);},exit(){S.auto=false;$('btnAuto').textContent='▶ 自动发射（开/关）';}},
+];
+const demo={on:false,i:-1,t:0,paused:false};
+function startDemo(){
+  demo.on=true;demo.paused=false;demo.i=-1;
+  S.auto=false;$('btnAuto').textContent='▶ 自动发射（开/关）';
+  document.body.classList.add('demo');
+  $('subTitle').classList.add('show');
+  nextScene();
+}
+function stopDemo(){
+  if(!demo.on)return;
+  demo.on=false;document.body.classList.remove('demo');
+  $('subTitle').classList.remove('show');$('demoBar').style.width='0%';
+}
+function nextScene(){
+  if(demo.i>=0&&DEMO[demo.i].exit)try{DEMO[demo.i].exit()}catch(e){}
+  demo.i++;
+  if(demo.i>=DEMO.length){
+    demo.on=false;document.body.classList.remove('demo');
+    $('subTitle').classList.remove('show');$('demoBar').style.width='100%';
+    return;
+  }
+  demo.t=0;
+  const sc=DEMO[demo.i];
+  $('subText').innerHTML='<span style="color:var(--cyan);font-family:ui-monospace,monospace;font-size:11px;margin-right:8px">'+(demo.i+1)+'/'+DEMO.length+'</span>'+sc.cap;
+  if(sc.enter)try{sc.enter()}catch(e){}
+  $('demoBar').style.width=(demo.i/DEMO.length*100)+'%';
+}
+function demoUpdate(dt){
+  demo.t+=dt;
+  const sc=DEMO[demo.i];
+  if(sc&&demo.t>sc.dur)nextScene();
+}
+$('demoBtn').addEventListener('click',()=>{demo.on?stopDemo():startDemo();});
+$('subPlay').addEventListener('click',()=>{demo.paused=!demo.paused;$('subPlay').textContent=demo.paused?'▶':'⏸';});
+$('subNext').addEventListener('click',()=>{if(demo.on)nextScene();});
+$('subPrev').addEventListener('click',()=>{if(demo.on){demo.i=Math.max(-1,demo.i-2);nextScene();}});
+$('subExit').addEventListener('click',stopDemo);
+document.addEventListener('keydown',e=>{
+  if(e.key===' '&&demo.on){e.preventDefault();demo.paused=!demo.paused;$('subPlay').textContent=demo.paused?'▶':'⏸';}
+});
+
+/* ---------------- 启动 ---------------- */
+setSigma(0.564406);
+for(let i=0;i<60;i++)spawn();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
