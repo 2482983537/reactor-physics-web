@@ -477,9 +477,9 @@ body[data-step] .keep{opacity:1!important}
   <p>比例系数 <b>σ</b> 就是<b>微观截面</b>：它不随靶的厚薄、疏密改变，是中子与单个靶核发生某种反应的「固有概率」。</p>
   <div class="ibox"><div class="ibox-t">薄靶实验台 · 拖动参数，看束流如何衰减</div>
    <canvas id="slabCanvas" width="900" height="300"></canvas>
-   <div class="ctl-row"><span>σ</span><input type="range" id="slabSig" min="0" max="100" step="1" value="40"><output id="slabSigOut">—</output>
-    <span>N</span><input type="range" id="slabN" min="4" max="60" step="1" value="10"><output id="slabNOut">—</output>
-    <span>dx</span><input type="range" id="slabDx" min="2" max="50" step="1" value="5"><output id="slabDxOut">—</output></div>
+   <div class="ctl-row"><span style="min-width:92px;font-weight:700">σ 微观截面</span><input type="range" id="slabSig" min="0" max="100" step="1" value="40"><output id="slabSigOut">—</output></div>
+   <div class="ctl-row"><span style="min-width:92px;font-weight:700">N 核密度</span><input type="range" id="slabN" min="4" max="60" step="1" value="10"><output id="slabNOut">—</output></div>
+   <div class="ctl-row"><span style="min-width:92px;font-weight:700">dx 靶厚度</span><input type="range" id="slabDx" min="2" max="50" step="1" value="5"><output id="slabDxOut">—</output></div>
    <div class="ctl-row"><span class="stat-chip">光学厚度 Nσdx = <b id="slabTau">—</b></span><span class="stat-chip">理论穿透率 e<sup>-Nσdx</sup> = <b id="slabTheory">—</b></span><span class="stat-chip">实测计数比 I′/I = <b id="slabMeas">—</b></span></div>
    <div class="note">每个中子独立地「掷骰子」：穿过靶时以一定概率与靶核反应而消失。计数比会收敛到理论值 e<sup>−Nσdx</sup>——概率就这样被实验定义出来。</div>
   </div>
@@ -720,7 +720,7 @@ window.sigmaF=function(lgE){ /* lgE = log10(E/eV) */
 (function(){
   const cv=document.getElementById('slabCanvas'),ctx=cv.getContext('2d');
   const W=cv.width,H=cv.height,SLAB_X=430;
-  let neutrons=[],spawnAcc=0,pass=0,total=0;
+  let neutrons=[],dying=[],spawnAcc=0,pass=0,total=0;
   const sigSl=document.getElementById('slabSig'),nSl=document.getElementById('slabN'),dxSl=document.getElementById('slabDx');
   function sigB(){return Math.pow(10,-1+sigSl.value/100*4);}          /* 0.1~1000 b */
   function nCm3(){return nSl.value*1e22;}                              /* ×10^22 /cm³ */
@@ -740,12 +740,20 @@ window.sigmaF=function(lgE){ /* lgE = log10(E/eV) */
   }
   function step(){
     spawnAcc++;if(spawnAcc%3===0)spawn();
-    const t=tau(),p=Math.exp(-t);
+    const t=tau(),p=Math.exp(-t),wSlab=8+dxCm()*10;
     for(let i=neutrons.length-1;i>=0;i--){const n=neutrons[i];
       n.x+=n.v;
-      if(n.x>SLAB_X&&n.x<SLAB_X+62&&n.surv===null){n.surv=Math.random()<p;}
-      if(n.x>W-8){total++;if(n.surv!==false)pass++;neutrons.splice(i,1);}
+      if(n.x>SLAB_X&&n.surv===null){
+        n.surv=Math.random()<p;
+        if(!n.surv)n.deathX=Math.max(n.x+3,SLAB_X+(0.3+0.65*Math.random())*wSlab);  /* 被吸收：死在靶内随机深度 */
+      }
+      if(n.surv===false&&n.x>=n.deathX){   /* 在靶内被吸收：变红滑行后在此淡出 */
+        dying.push({x:n.deathX,y:n.y,a:1});
+        total++;neutrons.splice(i,1);continue;
+      }
+      if(n.x>W-8){total++;pass++;neutrons.splice(i,1);}
     }
+    for(let i=dying.length-1;i>=0;i--){dying[i].a-=0.09;if(dying[i].a<=0)dying.splice(i,1);}
   }
   function draw(){
     ctx.clearRect(0,0,W,H);ctx.fillStyle='#0a0f14';ctx.fillRect(0,0,W,H);
@@ -761,7 +769,10 @@ window.sigmaF=function(lgE){ /* lgE = log10(E/eV) */
     neutrons.forEach(n=>{
       ctx.strokeStyle=n.surv===false?'rgba(255,107,95,.9)':'#52d3f2';
       ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(n.x-8,n.y);ctx.lineTo(n.x,n.y);ctx.stroke();
-      if(n.surv===false){ctx.fillStyle='#ff6b5f';ctx.beginPath();ctx.arc(n.x,n.y,2.4,0,6.283);ctx.fill();}
+    });
+    dying.forEach(d=>{   /* 吸收点红色残影，淡出表示被靶吸收 */
+      ctx.fillStyle='rgba(255,107,95,'+Math.max(0,d.a).toFixed(2)+')';
+      ctx.beginPath();ctx.arc(d.x,d.y,2.6,0,6.283);ctx.fill();
     });
     ctx.fillStyle='#8b96a8';ctx.font='11px sans-serif';
     ctx.fillText('入射 I →',16,16);
