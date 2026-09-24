@@ -441,7 +441,8 @@ body[data-step] .keep{opacity:1!important}
    <div class="k-card"><div class="k">驼峰曲线</div><p>产额随质量数呈<b>两个「山峰」（A≈95 与 A≈139）和一个「谷底」（A≈117）</b>——对称分裂反而少。</p></div>
    <div class="k-card"><div class="k">能量影响</div><p>入射中子能量越高（热 → 500 keV → 14 MeV），谷底越浅、对称分裂比例越高。</p></div>
   </div>
-  <div class="ibox"><div class="ibox-t">抽一次裂变：质量分配落点（U-235 热中子）</div>
+  <!-- 暂隐藏：代码保留，需要时去掉 hidden 即可放出 -->
+  <div class="ibox" hidden><div class="ibox-t">抽一次裂变：质量分配落点（U-235 热中子）</div>
    <canvas id="yieldCanvas" width="900" height="360"></canvas>
    <div class="ctl-row"><button class="ibtn primary" id="yfOne">🎲 裂变一次</button>
     <button class="ibtn" id="yfHundred">连抽 200 次</button><button class="ibtn" id="yfClear">清除散点</button>
@@ -686,7 +687,9 @@ window.addEventListener('DOMContentLoaded',function(){
 <script>
 /* ---- 驼峰曲线抽样（线性纵轴） ---- */
 (function(){
-  const cv=document.getElementById('yieldCanvas'),ctx=cv.getContext('2d');
+  const cv=document.getElementById('yieldCanvas');
+  if(!cv||cv.closest('[hidden]'))return;       /* 隐藏状态下不初始化 */
+  const ctx=cv.getContext('2d');
   const W=cv.width,H=cv.height,L=64,T=16,R=W-20,B=H-44;
   const AMIN=75,AMAX=162,YTOP=7;              /* 纵轴线性：0~7% */
   function yieldPct(A){ /* U-235 热中子独立产额（%，示意） */
